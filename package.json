@@ -2,10 +2,12 @@
   "name": "project-colors",
   "displayName": "Project Colors",
   "description": "Customize your VS Code with project-specific colors and settings.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "engines": {
     "vscode": "^1.96.0"
   },
+  "icon": "img/logo.png",
+  "publisher": "lennardv",
   "repository": {
     "type": "git",
     "url": "https://github.com/lennardv2/project-colors"
