@@ -42,7 +42,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Create a status bar item with low priority to appear farthest to the left
     const statusBarItem = vscode.window.createStatusBarItem(
         vscode.StatusBarAlignment.Left,
-        9999 // Negative priority ensures it appears farthest to the left
+        99999
     );
     updateStatusBarItem(statusBarItem, args);
     statusBarItem.command = 'project-colors.openSettings';
