@@ -1,21 +1,69 @@
 {
   "name": "project-colors",
-  "displayName": "project-colors",
-  "description": "Give color to your projects to make them distinguisable",
-  "version": "0.0.1",
+  "displayName": "Project Colors",
+  "description": "Customize your VS Code with project-specific colors and settings.",
+  "version": "1.0.0",
   "engines": {
     "vscode": "^1.96.0"
   },
   "categories": [
+    "Themes",
     "Other"
   ],
-  "activationEvents": [],
+  "activationEvents": [
+    "*"
+  ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "type": "object",
+      "title": "Project Colors",
+      "properties": {
+        "projectColors.name": {
+          "type": "string",
+          "description": "The name of the current project."
+        },
+        "projectColors.mainColor": {
+          "type": "string",
+          "default": "#681DD7",
+          "description": "The main color used for project theming."
+        },
+        "projectColors.isActivityBarColored": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the activity bar should be colored with the main color."
+        },
+        "projectColors.isTitleBarColored": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the title bar should be colored with the main color."
+        },
+        "projectColors.isStatusBarColored": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the status bar should be colored with the main color."
+        },
+        "projectColors.isProjectNameColored": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the project name should be colored with the main color."
+        },
+        "projectColors.isActiveItemsColored": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the active items should be colored with the main color."
+        },
+        "projectColors.setWindowTitle": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether the window title should be set to the project name."
+        }
+      }
+    },
     "commands": [
       {
-        "command": "project-colors.pickColor",
-        "title": "Pick Main Color"
+        "command": "project-colors.openSettings",
+        "title": "Customize Project Colors"
       }
     ]
   },

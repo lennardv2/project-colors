@@ -1,71 +1,68 @@
-# project-colors README
+# Project Colors
 
-This is the README for your extension "project-colors". After writing up a brief description, we recommend including the following sections.
+**Project Colors** is a VS Code extension designed to make your workspace more personal and visually distinct. Easily set project-specific colors and display a project name in the status bar to improve organization and recognition across multiple projects.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- **Customizable Colors**:  
+  Personalize the colors of the activity bar, title bar, status bar, and other UI elements. Adjust contrast and transparency for better readability.
+  
+- **Dynamic Project Name**:  
+  Display the project name in the status bar and optionally set it as the VS Code window title.
 
-For example if there is an image subfolder under your extension project workspace:
+- **User-friendly Configuration Panel**:  
+  Use an integrated settings panel to customize colors and project details.
 
-\!\[feature X\]\(images/feature-x.png\)
+- **Live Updates**:  
+  All changes are applied instantly without needing to reload your editor.
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+- **Toggleable Options**:  
+  Decide which parts of the UI to colorize:
+  - Activity Bar
+  - Title Bar
+  - Status Bar
+  - Active Items (buttons, tabs, etc.)
+  - Project Name Coloring
+
+## Demo
+![Project Colors Demo](./img/project-colors.mp4)
+
+> Click the image to watch the full demo.
+
+## Settings
+
+This extension adds the following settings to your workspace:
+
+- **`projectColors.name`**: Display name of the project in the status bar.
+- **`projectColors.mainColor`**: The primary color for UI customizations.
+- **`projectColors.isActivityBarColored`**: Enable/disable coloring of the activity bar.
+- **`projectColors.isTitleBarColored`**: Enable/disable coloring of the title bar.
+- **`projectColors.isStatusBarColored`**: Enable/disable coloring of the status bar.
+- **`projectColors.isProjectNameColored`**: Enable/disable coloring of the project name in the status bar.
+- **`projectColors.isActiveItemsColored`**: Enable/disable coloring of active UI elements.
+- **`projectColors.setWindowTitle`**: Set the VS Code window title to the project name.
+
+## How to Use
+
+1. Open the **Command Palette** (`Ctrl+Shift+P` or `Cmd+Shift+P`).
+2. Search for and select `Project Colors: Open Settings`.
+3. Customize your project name, color, and toggles using the interactive settings panel.
 
 ## Requirements
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
-
-## Extension Settings
-
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
-
-For example:
-
-This extension contributes the following settings:
-
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+- **Visual Studio Code**: Version 1.78.0 or higher.
 
 ## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
+- Some themes may override specific color settings. If results vary, try switching themes.
+- Color changes might not be immediately visible for certain UI elements depending on your current theme.
 
 ## Release Notes
 
-Users appreciate release notes as you update your extension.
-
 ### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
+- Initial release of **Project Colors**.
+- Features customizable colors, project name display, and dynamic settings panel.
 
 ---
 
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
+**Transform your workspace with Project Colors!**
