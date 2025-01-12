@@ -1,5 +1,5 @@
 # Project Colors
-<img width="952" alt="colorize-and-name-your-projects" src="https://github.com/user-attachments/assets/2115697d-505a-4477-bea6-a3387dc73caf" />
+<img width="794" alt="color-and-name-your-projects" src="https://github.com/user-attachments/assets/78b62cff-bc63-4f87-bca6-d6a78df24fbb" />
 
 **Project Colors** is a VS Code extension designed to make your workspace more personal and visually distinct. Easily set project-specific colors and display a project name in the status bar to improve organization and recognition across multiple projects.
 
