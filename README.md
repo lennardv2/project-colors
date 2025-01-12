@@ -46,17 +46,16 @@ This extension adds the following settings to your workspace:
 ## How to Use
 
 1. Open the **Command Palette** (`Ctrl+Shift+P` or `Cmd+Shift+P`).
-2. Search for and select `Project Colors: Open Settings`.
+2. Search for and select `Customize Project Colors`.
 3. Customize your project name, color, and toggles using the interactive settings panel.
 
-## Requirements
+or
 
-- **Visual Studio Code**: Version 1.78.0 or higher.
+1. Click on the project name in the left lower corner
 
 ## Known Issues
 
 - Some themes may override specific color settings. If results vary, try switching themes.
-- Color changes might not be immediately visible for certain UI elements depending on your current theme.
 
 ## Release Notes
 
