@@ -2,6 +2,9 @@
 
 **Project Colors** is a VS Code extension designed to make your workspace more personal and visually distinct. Easily set project-specific colors and display a project name in the status bar to improve organization and recognition across multiple projects.
 
+## Demo
+![Project Colors Demo](https://github.com/lennardv2/project-colors/raw/refs/heads/main/img/project-colors.mp4)
+
 ## Features
 
 - **Customizable Colors**:  
@@ -23,9 +26,6 @@
   - Status Bar
   - Active Items (buttons, tabs, etc.)
   - Project Name Coloring
-
-## Demo
-![Project Colors Demo](./img/project-colors.mp4)
 
 > Click the image to watch the full demo.
 
