@@ -1,7 +1,7 @@
 {
   "name": "project-colors",
-  "displayName": "Workspace Colors",
-  "description": "Customize your VS Code with project-specific colors and settings.",
+  "displayName": "Workspace Name & Colors",
+  "description": "Customize workspace colors and specify a name to distinguish multiple windows. Keywords: project workspace colors peacock colorize",
   "version": "1.0.4",
   "engines": {
     "vscode": "^1.60.0"
