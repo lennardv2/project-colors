@@ -2,9 +2,9 @@
   "name": "project-colors",
   "displayName": "Project Colors",
   "description": "Customize your VS Code with project-specific colors and settings.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "engines": {
-    "vscode": "^1.50.0"
+    "vscode": "^1.60.0"
   },
   "homepage": "https://github.com/lennardv2/project-colors",
   "icon": "img/logo.png",
@@ -85,7 +85,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "^20.17.12",
-    "@types/vscode": "^1.96.0",
+    "@types/vscode": "1.60",
     "@typescript-eslint/eslint-plugin": "^8.17.0",
     "@typescript-eslint/parser": "^8.17.0",
     "@vscode/test-cli": "^0.0.10",
