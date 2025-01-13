@@ -69,9 +69,6 @@ export function activate(context: vscode.ExtensionContext) {
         // Set the webview's HTML content
         panel.webview.html = getWebviewContent(args);
 
-        // Handle messages from the webview
-        let debounceTimer: NodeJS.Timeout | undefined;
-
         panel.webview.onDidReceiveMessage(
             async (message) => {
             if (message.command === 'setProps') {
@@ -397,7 +394,7 @@ function getWebviewContent(args: ProjectSettings): string {
 
         const postMessageDebounced = debounce((args) => {
             vscode.postMessage(args);
-        }, 300);
+        }, 150);
 
       </script>
     </body>
