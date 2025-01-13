@@ -42,7 +42,7 @@ export function activate(context: vscode.ExtensionContext) {
     // Create a status bar item with low priority to appear farthest to the left
     const statusBarItem = vscode.window.createStatusBarItem(
         vscode.StatusBarAlignment.Left,
-        99999
+        Infinity
     );
     updateStatusBarItem(statusBarItem, args);
     statusBarItem.command = 'project-colors.openSettings';
@@ -69,11 +69,6 @@ export function activate(context: vscode.ExtensionContext) {
         panel.webview.onDidReceiveMessage(
             async (message) => {
             if (message.command === 'setProps') {
-                if (debounceTimer) {
-                    clearTimeout(debounceTimer);
-                }
-
-                debounceTimer = setTimeout(async () => {
                     let newProps: ProjectSettings = message.props;
                     await saveToConfig('name', newProps.projectName);
                     await saveToConfig('mainColor', newProps.mainColor);
@@ -89,8 +84,7 @@ export function activate(context: vscode.ExtensionContext) {
 
                     const customization = generateColorCustomizations(newProps);
                     await applyColorCustomizations(customization);
-                }, 100); // Adjust the debounce delay as needed
-            }
+                }
             },
             undefined,
             context.subscriptions
@@ -348,44 +342,57 @@ function getWebviewContent(args: ProjectSettings): string {
 
         projectNameInput.addEventListener('input', () => {
           props.projectName = projectNameInput.value;
-          vscode.postMessage({ command: 'setProps', props });
+          postMessageDebounced({ command: 'setProps', props });
         });
 
         colorPicker.addEventListener('input', () => {
           const color = colorPicker.value;
           props.mainColor = color;
-          vscode.postMessage({ command: 'setProps', props });
+          postMessageDebounced({ command: 'setProps', props });
         });
 
         isActivityBarColored.addEventListener('change', () => {
             props.isActivityBarColored = isActivityBarColored.checked;
-            vscode.postMessage({ command: 'setProps', props });
+            postMessageDebounced({ command: 'setProps', props });
         });
 
         isTitleBarColored.addEventListener('change', () => {
             props.isTitleBarColored = isTitleBarColored.checked;
-            vscode.postMessage({ command: 'setProps', props });
+            postMessageDebounced({ command: 'setProps', props });
         });
 
         isProjectNameColored.addEventListener('change', () => {
             props.isProjectNameColored = isProjectNameColored.checked;
-            vscode.postMessage({ command: 'setProps', props });
+            postMessageDebounced({ command: 'setProps', props });
         });
 
         isStatusBarColored.addEventListener('change', () => {
             props.isStatusBarColored = isStatusBarColored.checked;
-            vscode.postMessage({ command: 'setProps', props });
+            postMessageDebounced({ command: 'setProps', props });
         });
 
         isActiveItemsColored.addEventListener('change', () => {
             props.isActiveItemsColored = isActiveItemsColored.checked;
-            vscode.postMessage({ command: 'setProps', props });
+            postMessageDebounced({ command: 'setProps', props });
         });
 
         setWindowTitle.addEventListener('change', () => {
             props.setWindowTitle = setWindowTitle.checked;
-            vscode.postMessage({ command: 'setProps', props });
+            postMessageDebounced({ command: 'setProps', props });
         });
+
+        function debounce(func, delay) {
+            let timer;
+            return (...args) => {
+                clearTimeout(timer);
+                timer = setTimeout(() => func(...args), delay);
+            };
+        }
+
+        const postMessageDebounced = debounce((args) => {
+            vscode.postMessage(args);
+        }, 300);
+
       </script>
     </body>
     </html>
