@@ -11,7 +11,7 @@ type ProjectSettings = {
     setWindowTitle: boolean;
 }
 
-export function activate(context: vscode.ExtensionContext) {
+function readConfig(): ProjectSettings {
     const config = vscode.workspace.getConfiguration('projectColors');
     const workspaceFolders = vscode.workspace.workspaceFolders;
     let fallbackProjectName = 'Untitled Project';
@@ -28,7 +28,7 @@ export function activate(context: vscode.ExtensionContext) {
     let isActiveItemsColored = config.get<boolean>('isActiveItemsColored') ?? true;
     let setWindowTitle = config.get<boolean>('setWindowTitle') ?? true;
 
-    let args: ProjectSettings = {
+    return {
         projectName,
         mainColor,
         isActivityBarColored,
@@ -38,6 +38,10 @@ export function activate(context: vscode.ExtensionContext) {
         isActiveItemsColored,
         setWindowTitle
     };
+}
+
+export function activate(context: vscode.ExtensionContext) {
+    let args = readConfig();
 
     // Create a status bar item with low priority to appear farthest to the left
     const statusBarItem = vscode.window.createStatusBarItem(
@@ -53,6 +57,8 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register the command to open the settings webview
     const disposable = vscode.commands.registerCommand('project-colors.openSettings', () => {
+        args = readConfig();
+
         const panel = vscode.window.createWebviewPanel(
             'projectSettings',
             'Project Settings',
