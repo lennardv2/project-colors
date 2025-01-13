@@ -57,12 +57,6 @@ or
 
 - Some themes may override specific color settings. If results vary, try switching themes.
 
-## Release Notes
-
-### 1.0.0
-- Initial release of **Project Colors**.
-- Features customizable colors, project name display, and dynamic settings panel.
-
 ---
 
 **Transform your workspace with Project Colors!**
