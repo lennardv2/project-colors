@@ -2,7 +2,7 @@
   "name": "project-colors",
   "displayName": "Workspace Colors",
   "description": "Customize your VS Code with project-specific colors and settings.",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "engines": {
     "vscode": "^1.60.0"
   },
