@@ -1,4 +1,4 @@
-# Workspace Colors
+# Workspace Name & Colors
 <img width="794" alt="color-and-name-your-projects" src="https://github.com/user-attachments/assets/78b62cff-bc63-4f87-bca6-d6a78df24fbb" />
 
 **Workspace Colors** is a VS Code extension designed to make your workspace more personal and visually distinct. Easily set project-specific colors and display a project name in the status bar to improve organization and recognition across multiple projects.
@@ -30,6 +30,10 @@ https://github.com/user-attachments/assets/a298734a-55a9-489c-9c24-44c134025f5c
 
 > Click the image to watch the full demo.
 
+## Differences from Peacock
+- Allows you to set a project name in the status bar.
+- Provides a settings panel for easy customization.
+
 ## Settings
 
 This extension adds the following settings to your workspace:
@@ -53,10 +57,4 @@ or
 
 1. Click on the project name in the left lower corner
 
-## Known Issues
-
-- Some themes may override specific color settings. If results vary, try switching themes.
-
----
-
-**Transform your workspace with Project Colors!**
+Keywords: project, workspace, colors, peacock, colorize, theme, personalization, customization, activity bar, title bar, status bar, project name, UI, settings, dynamic, live updates, toggleable, contrast, transparency, readability, integrated, user-friendly, interactive, settings panel, active items, buttons, tabs, window title, primary color, color settings, themes, override, workspace, personal, visually distinct, organization, recognition, multiple projects.
