@@ -56,4 +56,4 @@ or
 
 1. Click on the project name in the left lower corner
 
-Keywords: project, workspace, colors, peacock, colorize, theme, personalization, customization, activity bar, title bar, status bar, project name, UI, settings, dynamic, live updates, toggleable, contrast, transparency, readability, integrated, user-friendly, interactive, settings panel, active items, buttons, tabs, window title, primary color, color settings, themes, override, workspace, personal, visually distinct, organization, recognition, multiple projects.
+Keywords: project, workspace, colors, peacock, color, colorize, theme, personalization, customization, activity bar, title bar, status bar, project name, UI, settings, dynamic, live updates, toggleable, contrast, transparency, readability, integrated, user-friendly, interactive, settings panel, active items, buttons, tabs, window title, primary color, color settings, themes, override, workspace, personal, visually distinct, organization, recognition, multiple projects.
