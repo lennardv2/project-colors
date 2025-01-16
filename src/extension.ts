@@ -1,6 +1,26 @@
 import * as vscode from 'vscode';
 import { getWorkspaceWebview } from './views/workspace';
 import { getListWebview } from './views/list';
+import {
+    applyColorCustomizations,
+    getContrastColor,
+    lightenOrDarkenColor,
+    transparency,
+    mixColors,
+    hexToRgb
+} from './helpers';
+import {
+    readConfig,
+    saveWorkspaceReference,
+    deleteWorkspaceReference,
+    moveWorkspace,
+    saveWorkspaceGroup,
+    deleteWorkspaceGroup,
+    loadWorkspaceReferences,
+    loadWorkspaceGroups,
+    loadWorkspaceConfig,
+    saveToWorkspaceConfig
+} from './workspaces';
 
 export type ProjectSettings = {
     projectName: string;
@@ -22,100 +42,42 @@ export type WorkspaceGroup = {
     workspaces: WorkspaceReference[];
 }
 
-async function readConfig(directory: string): Promise<ProjectSettings> {
-    const uri = vscode.Uri.file(directory);
-    const configPath = directory.endsWith('.code-workspace') ? uri : uri.with({ path: `${uri.path}/.vscode/settings.json` });
-    const config = await vscode.workspace.fs.readFile(configPath);
-    const settings = JSON.parse(config.toString());
+let listStatusbar : vscode.StatusBarItem;
+let workspaceStatusbar : vscode.StatusBarItem;
 
-    const fallbackProjectName = directory.split('/').pop() || 'Untitled Project';
+export async function activate(context: vscode.ExtensionContext) {
+    let args = await readConfig(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '');
 
-    const projectColors = directory.endsWith('.code-workspace') ? settings['settings'] : settings;
+    listStatusbar = vscode.window.createStatusBarItem(
+        vscode.StatusBarAlignment.Left,
+        Infinity
+    );
 
-    return {
-        projectName: projectColors['projectColors.name'] || fallbackProjectName,
-        mainColor: projectColors['projectColors.mainColor'] || '#681DD7',
-        isActivityBarColored: projectColors['projectColors.isActivityBarColored'] ?? false,
-        isTitleBarColored: projectColors['projectColors.isTitleBarColored'] ?? false,
-        isStatusBarColored: projectColors['projectColors.isStatusBarColored'] ?? false,
-        isProjectNameColored: projectColors['projectColors.isProjectNameColored'] ?? true,
-        isActiveItemsColored: projectColors['projectColors.isActiveItemsColored'] ?? true,
-        setWindowTitle: projectColors['projectColors.setWindowTitle'] ?? true
-    };
-}
+    updateListStatusbar(listStatusbar, args);
+    listStatusbar.command = 'project-colors.openList';
+    listStatusbar.show();
 
-async function saveWorkspaceReference(reference: WorkspaceReference): Promise<void> {
-    const config = vscode.workspace.getConfiguration('projectColors');
-    const references = config.get<WorkspaceReference[]>('workspaces') || [];
-    const existingIndex = references.findIndex(ref => ref.directory === reference.directory);
+    context.subscriptions.push(listStatusbar);
 
-    if (existingIndex >= 0) {
-        references[existingIndex] = reference;
-    } else {
-        references.push(reference);
-    }
+    // Create a status bar item with low priority to appear farthest to the left
+    workspaceStatusbar = vscode.window.createStatusBarItem(
+        vscode.StatusBarAlignment.Left,
+        Infinity
+    );
 
-    await config.update('workspaces', references, vscode.ConfigurationTarget.Global);
-}
+    updateWorkspaceStatusbar(workspaceStatusbar, args);
+    workspaceStatusbar.command = 'project-colors.openSettings';
+    workspaceStatusbar.show();
 
-async function deleteWorkspaceReference(directory: string): Promise<void> {
-    const config = vscode.workspace.getConfiguration('projectColors');
-    let references = config.get<WorkspaceReference[]>('workspaces') || [];
-    references = references.filter(ref => ref.directory !== directory);
-    await config.update('workspaces', references, vscode.ConfigurationTarget.Global);
-}
+    // Ensure the status bar item is available immediately on launch
+    context.subscriptions.push(workspaceStatusbar);
 
-async function moveWorkspace(draggedDirectory: string, targetDirectory: string): Promise<void> {
-    const config = vscode.workspace.getConfiguration('projectColors');
-    let references = config.get<WorkspaceReference[]>('workspaces') || [];
-    const draggedIndex = references.findIndex(ref => ref.directory === draggedDirectory);
-    const targetIndex = references.findIndex(ref => ref.directory === targetDirectory);
+    createListCommand(context);
+    createWorkspaceSettingsCommand(context);
 
-    if (draggedIndex >= 0 && targetIndex >= 0) {
-        const [draggedItem] = references.splice(draggedIndex, 1);
-        references.splice(targetIndex, 0, draggedItem);
-        await config.update('workspaces', references, vscode.ConfigurationTarget.Global);
-    }
-}
-
-async function saveWorkspaceGroup(group: WorkspaceGroup): Promise<void> {
-    const config = vscode.workspace.getConfiguration('projectColors');
-    const groups = config.get<WorkspaceGroup[]>('groups') || [];
-    const existingIndex = groups.findIndex(g => g.name === group.name);
-
-    if (existingIndex >= 0) {
-        groups[existingIndex] = group;
-    } else {
-        groups.push(group);
-    }
-
-    await config.update('groups', groups, vscode.ConfigurationTarget.Global);
-}
-
-async function deleteWorkspaceGroup(groupName: string): Promise<void> {
-    const config = vscode.workspace.getConfiguration('projectColors');
-    let groups = config.get<WorkspaceGroup[]>('groups') || [];
-    groups = groups.filter(g => g.name !== groupName);
-    await config.update('groups', groups, vscode.ConfigurationTarget.Global);
-}
-
-function loadWorkspaceReferences(): WorkspaceReference[] {
-    const config = vscode.workspace.getConfiguration('projectColors');
-    return config.get<WorkspaceReference[]>('workspaces') || [];
-}
-
-function loadWorkspaceGroups(): WorkspaceGroup[] {
-    const config = vscode.workspace.getConfiguration('projectColors');
-    return config.get<WorkspaceGroup[]>('groups') || [];
-}
-
-async function loadWorkspaceConfig(directory: string): Promise<ProjectSettings | null> {
-    try {
-        return await readConfig(directory);
-    } catch (error: any) {
-        console.error(`Failed to load workspace config for ${directory}: ${error.message}`);
-        return null;
-    }
+    // Initialize window title on activation
+    applyColorCustomizations(generateColorCustomizations(args));
+    updateWindowTitle(args);
 }
 
 function createListCommand(context: vscode.ExtensionContext) {
@@ -212,6 +174,22 @@ function createListCommand(context: vscode.ExtensionContext) {
                     if (groupName) {
                         panel.webview.postMessage({ command: 'createGroup', groupName });
                     }
+                } else if (message.command === 'showOpenDialog') {
+                    const uri = await vscode.window.showOpenDialog({
+                        canSelectFolders: true,
+                        canSelectFiles: true,
+                        canSelectMany: false,
+                        openLabel: 'Select Folder or Workspace File',
+                        filters: {
+                            'Workspace Files': ['code-workspace'],
+                            'All Files': ['*']
+                        }
+                    });
+
+                    if (uri && uri[0]) {
+                        const directory = uri[0].fsPath;
+                        panel.webview.postMessage({ command: 'addWorkspaceToGroup', groupName: message.groupName, directory });
+                    }
                 }
             },
             undefined,
@@ -223,46 +201,8 @@ function createListCommand(context: vscode.ExtensionContext) {
     context.subscriptions.push(disposable);
 }
 
-async function loadWorkspaces(): Promise<(WorkspaceReference & { settings: ProjectSettings })[]> {
-    const references = loadWorkspaceReferences();
-    return await Promise.all(references.map(async ref => {
-        const config = await loadWorkspaceConfig(ref.directory);
-        return config ? { ...ref, ...{ settings: config } } : null;
-    })).then(results => results.filter(Boolean) as (WorkspaceReference & { settings: ProjectSettings })[]);
-}
-
-export async function activate(context: vscode.ExtensionContext) {
-    let args = await readConfig(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '');
-
-    const listStatusbar = vscode.window.createStatusBarItem(
-        vscode.StatusBarAlignment.Left,
-        Infinity
-    );
-
-    updateListStatusbar(listStatusbar, args);
-    listStatusbar.command = 'project-colors.openList';
-    listStatusbar.show();
-
-    context.subscriptions.push(listStatusbar);
-
-    // Create a status bar item with low priority to appear farthest to the left
-    const workspaceStatusbar = vscode.window.createStatusBarItem(
-        vscode.StatusBarAlignment.Left,
-        Infinity
-    );
-
-    updateWorkspaceStatusbar(workspaceStatusbar, args);
-    workspaceStatusbar.command = 'project-colors.openSettings';
-    workspaceStatusbar.show();
-
-    // Ensure the status bar item is available immediately on launch
-    context.subscriptions.push(workspaceStatusbar);
-
-
-    // Register the command to open the settings webview
+function createWorkspaceSettingsCommand(context: vscode.ExtensionContext) {
     const disposable = vscode.commands.registerCommand('project-colors.openSettings', async () => {
-        args = await readConfig(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '');
-
         const panel = vscode.window.createWebviewPanel(
             'projectSettings',
             'Project Settings',
@@ -270,12 +210,14 @@ export async function activate(context: vscode.ExtensionContext) {
             { enableScripts: true }
         );
 
-        // Set the webview's HTML content
-        panel.webview.html = getWorkspaceWebview(args);
+        async function updateWebview() {
+            const args = await readConfig(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '');
+            panel.webview.html = getWorkspaceWebview(args);
+        }
 
         panel.webview.onDidReceiveMessage(
             async (message) => {
-            if (message.command === 'setProps') {
+                if (message.command === 'setProps') {
                     let newProps: ProjectSettings = message.props;
                     await saveToWorkspaceConfig('name', newProps.projectName);
                     await saveToWorkspaceConfig('mainColor', newProps.mainColor);
@@ -305,21 +247,13 @@ export async function activate(context: vscode.ExtensionContext) {
             undefined,
             context.subscriptions
         );
+
+        await updateWebview();
     });
-
     context.subscriptions.push(disposable);
-
-    // Initialize window title on activation
-    applyColorCustomizations(generateColorCustomizations(args));
-    updateWindowTitle(args);
-
-    createListCommand(context);
 }
 
-async function saveToWorkspaceConfig(key: string, value: string | boolean): Promise<void> {
-    const config = vscode.workspace.getConfiguration('projectColors');
-    await config.update(key, value, vscode.ConfigurationTarget.Workspace);
-}
+
 
 function updateListStatusbar(item: vscode.StatusBarItem, args: ProjectSettings): void {
     item.text = '$(multiple-windows)';
@@ -357,34 +291,6 @@ function updateWindowTitle(args: ProjectSettings): void {
     }
 }
 
-
-function lightenOrDarkenColor(color: string, percent: number): string {
-    let num = parseInt(color.slice(1), 16);
-    let amt = Math.round(2.55 * percent);
-    let R = (num >> 16) + amt;
-    let B = ((num >> 8) & 0x00FF) + amt;
-    let G = (num & 0x0000FF) + amt;
-    let newColor = `#${(0x1000000 + (R < 255 ? (R < 1 ? 0 : R) : 255) * 0x10000 + (B < 255 ? (B < 1 ? 0 : B) : 255) * 0x100 + (G < 255 ? (G < 1 ? 0 : G) : 255)).toString(16).slice(1)}`;
-    return newColor;
-}
-
-function mixColors(color1: string, color2: string, weight: number): string {
-    const d2 = weight / 100;
-    const d1 = 1 - d2;
-    const rgb1 = hexToRgb(color1);
-    const rgb2 = hexToRgb(color2);
-    const r = Math.round(rgb1.r * d1 + rgb2.r * d2);
-    const g = Math.round(rgb1.g * d1 + rgb2.g * d2);
-    const b = Math.round(rgb1.b * d1 + rgb2.b * d2);
-    return `#${(r << 16 | g << 8 | b).toString(16)}`;
-}
-
-function transparency(color: string, alpha: number): string {
-    const rgb = hexToRgb(color);
-    return `${color}${Math.round(alpha * 255).toString(16).padStart(2, '0')}`;
-}
-
-
 function generateColorCustomizations(args: ProjectSettings): any {
     const contrastColor = getContrastColor(args.mainColor);
 
@@ -395,8 +301,6 @@ function generateColorCustomizations(args: ProjectSettings): any {
             
         }
     };
-
-
 
     if (args.isTitleBarColored) {
         customizations["workbench.colorCustomizations"] = {
@@ -496,34 +400,6 @@ function generateColorCustomizations(args: ProjectSettings): any {
     }
 
     return customizations;
-}
-
-function getContrastColor(hex: string): string {
-    const rgb = hexToRgb(hex);
-    const luminance = (0.299 * rgb.r + 0.587 * rgb.g + 0.114 * rgb.b) / 255; // Relative luminance
-    return luminance > 0.5 ? "#000000" : "#ffffff"; // Use black for bright colors, white for dark colors
-}
-
-function hexToRgb(hex: string): { r: number; g: number; b: number } {
-    const bigint = parseInt(hex.slice(1), 16);
-    return {
-        r: (bigint >> 16) & 255,
-        g: (bigint >> 8) & 255,
-        b: bigint & 255,
-    };
-}
-
-async function applyColorCustomizations(customizations: any) {
-    const config = vscode.workspace.getConfiguration();
-    try {
-        await config.update(
-            "workbench.colorCustomizations",
-            customizations["workbench.colorCustomizations"],
-            vscode.ConfigurationTarget.Workspace
-        );
-    } catch (error: any) {
-        vscode.window.showErrorMessage(`Failed to apply color customizations: ${error.message}`);
-    }
 }
 
 export function deactivate() { }
