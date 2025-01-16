@@ -64,6 +64,47 @@
           "type": "boolean",
           "default": true,
           "description": "Whether the window title should be set to the project name."
+        },
+        "projectColors.workspaces": {
+          "type": "array",
+          "description": "List of user-defined workspaces.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "projectName": {
+                "type": "string",
+                "description": "The name of the workspace."
+              },
+              "mainColor": {
+                "type": "string",
+                "description": "The main color used for the workspace."
+              },
+              "isActivityBarColored": {
+                "type": "boolean",
+                "description": "Whether the activity bar should be colored with the main color."
+              },
+              "isTitleBarColored": {
+                "type": "boolean",
+                "description": "Whether the title bar should be colored with the main color."
+              },
+              "isStatusBarColored": {
+                "type": "boolean",
+                "description": "Whether the status bar should be colored with the main color."
+              },
+              "isProjectNameColored": {
+                "type": "boolean",
+                "description": "Whether the project name should be colored with the main color."
+              },
+              "isActiveItemsColored": {
+                "type": "boolean",
+                "description": "Whether the active items should be colored with the main color."
+              },
+              "setWindowTitle": {
+                "type": "boolean",
+                "description": "Whether the window title should be set to the project name."
+              }
+            }
+          }
         }
       }
     },
@@ -71,6 +112,10 @@
       {
         "command": "project-colors.openSettings",
         "title": "Customize Project Colors"
+      },
+      {
+        "command": "project-colors.openList",
+        "title": "Open Workspace List"
       }
     ]
   },
