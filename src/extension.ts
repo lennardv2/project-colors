@@ -13,41 +13,113 @@ export type ProjectSettings = {
     setWindowTitle: boolean;
 }
 
-function readConfig(): ProjectSettings {
-    const config = vscode.workspace.getConfiguration('projectColors');
-    const workspaceFolders = vscode.workspace.workspaceFolders;
+export type WorkspaceReference = {
+    directory: string;
+}
 
-    let fallbackProjectName = 'Untitled Project';
+export type WorkspaceGroup = {
+    name: string;
+    workspaces: WorkspaceReference[];
+}
 
-    if (workspaceFolders && workspaceFolders.length > 0) {
-        const workspaceFolder = workspaceFolders[0];
-        fallbackProjectName = workspaceFolder.name;
-    }
+async function readConfig(directory: string): Promise<ProjectSettings> {
+    const uri = vscode.Uri.file(directory);
+    const configPath = directory.endsWith('.code-workspace') ? uri : uri.with({ path: `${uri.path}/.vscode/settings.json` });
+    const config = await vscode.workspace.fs.readFile(configPath);
+    const settings = JSON.parse(config.toString());
 
-    let projectName = config.get<string>('name') || fallbackProjectName;
-    let mainColor = config.get<string>('mainColor') || '#681DD7';
-    let isTitleBarColored = config.get<boolean>('isTitleBarColored') ?? false;
-    let isActivityBarColored = config.get<boolean>('isActivityBarColored') ?? false;
-    let isStatusBarColored = config.get<boolean>('isStatusBarColored') ?? false;
-    let isProjectNameColored = config.get<boolean>('isProjectNameColored') ?? true;
-    let isActiveItemsColored = config.get<boolean>('isActiveItemsColored') ?? true;
-    let setWindowTitle = config.get<boolean>('setWindowTitle') ?? true;
+    const fallbackProjectName = directory.split('/').pop() || 'Untitled Project';
+
+    const projectColors = directory.endsWith('.code-workspace') ? settings['settings'] : settings;
 
     return {
-        projectName,
-        mainColor,
-        isActivityBarColored,
-        isTitleBarColored,
-        isStatusBarColored,
-        isProjectNameColored,
-        isActiveItemsColored,
-        setWindowTitle
+        projectName: projectColors['projectColors.name'] || fallbackProjectName,
+        mainColor: projectColors['projectColors.mainColor'] || '#681DD7',
+        isActivityBarColored: projectColors['projectColors.isActivityBarColored'] ?? false,
+        isTitleBarColored: projectColors['projectColors.isTitleBarColored'] ?? false,
+        isStatusBarColored: projectColors['projectColors.isStatusBarColored'] ?? false,
+        isProjectNameColored: projectColors['projectColors.isProjectNameColored'] ?? true,
+        isActiveItemsColored: projectColors['projectColors.isActiveItemsColored'] ?? true,
+        setWindowTitle: projectColors['projectColors.setWindowTitle'] ?? true
     };
 }
 
+async function saveWorkspaceReference(reference: WorkspaceReference): Promise<void> {
+    const config = vscode.workspace.getConfiguration('projectColors');
+    const references = config.get<WorkspaceReference[]>('workspaces') || [];
+    const existingIndex = references.findIndex(ref => ref.directory === reference.directory);
+
+    if (existingIndex >= 0) {
+        references[existingIndex] = reference;
+    } else {
+        references.push(reference);
+    }
+
+    await config.update('workspaces', references, vscode.ConfigurationTarget.Global);
+}
+
+async function deleteWorkspaceReference(directory: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration('projectColors');
+    let references = config.get<WorkspaceReference[]>('workspaces') || [];
+    references = references.filter(ref => ref.directory !== directory);
+    await config.update('workspaces', references, vscode.ConfigurationTarget.Global);
+}
+
+async function moveWorkspace(draggedDirectory: string, targetDirectory: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration('projectColors');
+    let references = config.get<WorkspaceReference[]>('workspaces') || [];
+    const draggedIndex = references.findIndex(ref => ref.directory === draggedDirectory);
+    const targetIndex = references.findIndex(ref => ref.directory === targetDirectory);
+
+    if (draggedIndex >= 0 && targetIndex >= 0) {
+        const [draggedItem] = references.splice(draggedIndex, 1);
+        references.splice(targetIndex, 0, draggedItem);
+        await config.update('workspaces', references, vscode.ConfigurationTarget.Global);
+    }
+}
+
+async function saveWorkspaceGroup(group: WorkspaceGroup): Promise<void> {
+    const config = vscode.workspace.getConfiguration('projectColors');
+    const groups = config.get<WorkspaceGroup[]>('groups') || [];
+    const existingIndex = groups.findIndex(g => g.name === group.name);
+
+    if (existingIndex >= 0) {
+        groups[existingIndex] = group;
+    } else {
+        groups.push(group);
+    }
+
+    await config.update('groups', groups, vscode.ConfigurationTarget.Global);
+}
+
+async function deleteWorkspaceGroup(groupName: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration('projectColors');
+    let groups = config.get<WorkspaceGroup[]>('groups') || [];
+    groups = groups.filter(g => g.name !== groupName);
+    await config.update('groups', groups, vscode.ConfigurationTarget.Global);
+}
+
+function loadWorkspaceReferences(): WorkspaceReference[] {
+    const config = vscode.workspace.getConfiguration('projectColors');
+    return config.get<WorkspaceReference[]>('workspaces') || [];
+}
+
+function loadWorkspaceGroups(): WorkspaceGroup[] {
+    const config = vscode.workspace.getConfiguration('projectColors');
+    return config.get<WorkspaceGroup[]>('groups') || [];
+}
+
+async function loadWorkspaceConfig(directory: string): Promise<ProjectSettings | null> {
+    try {
+        return await readConfig(directory);
+    } catch (error: any) {
+        console.error(`Failed to load workspace config for ${directory}: ${error.message}`);
+        return null;
+    }
+}
+
 function createListCommand(context: vscode.ExtensionContext) {
-    const disposable = vscode.commands.registerCommand('project-colors.openList', () => {
-        const workspaces = readAllConfigs();
+    const disposable = vscode.commands.registerCommand('project-colors.openList', async () => {
         const panel = vscode.window.createWebviewPanel(
             'workspaceList',
             'Workspace List',
@@ -55,26 +127,112 @@ function createListCommand(context: vscode.ExtensionContext) {
             { enableScripts: true }
         );
 
-        panel.webview.html = getListWebview(workspaces);
+        async function updateWebview() {
+            const groups = loadWorkspaceGroups();
+            const workspaces = await Promise.all(groups.map(async group => {
+                const workspaceConfigs = await Promise.all(group.workspaces.map(async ref => {
+                    const config = await loadWorkspaceConfig(ref.directory);
+                    return config ? { ...ref, ...{ settings: config } } : null;
+                }));
+                return { ...group, workspaces: workspaceConfigs.filter(Boolean) as (WorkspaceReference & { settings: ProjectSettings })[] };
+            }));
+            panel.webview.html = getListWebview(workspaces);
+        }
 
         panel.webview.onDidReceiveMessage(
             async (message) => {
                 if (message.command === 'openWorkspace') {
-                    const workspace = workspaces.find(ws => ws.projectName === message.projectName);
+                    const workspace = loadWorkspaceReferences().find(ws => ws.directory === message.directory);
                     if (workspace) {
-                        // Logic to switch to the selected workspace
+                        console.log(`Opening workspace: ${workspace.directory}`);
+                        const uri = vscode.Uri.file(workspace.directory);
+                        const isWorkspaceFile = workspace.directory.endsWith('.code-workspace');
+                        vscode.commands.executeCommand('vscode.openFolder', uri, isWorkspaceFile);
+                    } else {
+                        console.error(`Workspace not found: ${message.directory}`);
+                    }
+                } else if (message.command === 'createNewWorkspace') {
+                    const uri = await vscode.window.showOpenDialog({
+                        canSelectFolders: true,
+                        canSelectFiles: true,
+                        canSelectMany: false,
+                        openLabel: 'Select Folder or Workspace File',
+                        filters: {
+                            'Workspace Files': ['code-workspace'],
+                            'All Files': ['*']
+                        }
+                    });
+
+                    if (uri && uri[0]) {
+                        const directory = uri[0].fsPath;
+
+                        const newWorkspace: WorkspaceReference = {
+                            directory
+                        };
+
+                        await saveWorkspaceReference(newWorkspace);
+                        await updateWebview();
+                    }
+                } else if (message.command === 'deleteWorkspace') {
+                    await deleteWorkspaceReference(message.directory);
+                    await updateWebview();
+                } else if (message.command === 'moveWorkspace') {
+                    await moveWorkspace(message.draggedDirectory, message.targetDirectory);
+                    await updateWebview();
+                } else if (message.command === 'createGroup') {
+                    const groupName = message.groupName;
+                    const newGroup: WorkspaceGroup = { name: groupName, workspaces: [] };
+                    await saveWorkspaceGroup(newGroup);
+                    await updateWebview();
+                } else if (message.command === 'deleteGroup') {
+                    await deleteWorkspaceGroup(message.groupName);
+                    await updateWebview();
+                } else if (message.command === 'addWorkspaceToGroup') {
+                    const groupName = message.groupName;
+                    const directory = message.directory;
+                    const groups = loadWorkspaceGroups();
+                    const group = groups.find(g => g.name === groupName);
+                    if (group) {
+                        group.workspaces.push({ directory });
+                        await saveWorkspaceGroup(group);
+                        await updateWebview();
+                    }
+                } else if (message.command === 'removeWorkspaceFromGroup') {
+                    const groupName = message.groupName;
+                    const directory = message.directory;
+                    const groups = loadWorkspaceGroups();
+                    const group = groups.find(g => g.name === groupName);
+                    if (group) {
+                        group.workspaces = group.workspaces.filter(ws => ws.directory !== directory);
+                        await saveWorkspaceGroup(group);
+                        await updateWebview();
+                    }
+                } else if (message.command === 'showInputBox') {
+                    const groupName = await vscode.window.showInputBox({ placeHolder: message.placeholder });
+                    if (groupName) {
+                        panel.webview.postMessage({ command: 'createGroup', groupName });
                     }
                 }
             },
             undefined,
             context.subscriptions
         );
+
+        await updateWebview();
     });
     context.subscriptions.push(disposable);
 }
 
-export function activate(context: vscode.ExtensionContext) {
-    let args = readConfig();
+async function loadWorkspaces(): Promise<(WorkspaceReference & { settings: ProjectSettings })[]> {
+    const references = loadWorkspaceReferences();
+    return await Promise.all(references.map(async ref => {
+        const config = await loadWorkspaceConfig(ref.directory);
+        return config ? { ...ref, ...{ settings: config } } : null;
+    })).then(results => results.filter(Boolean) as (WorkspaceReference & { settings: ProjectSettings })[]);
+}
+
+export async function activate(context: vscode.ExtensionContext) {
+    let args = await readConfig(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '');
 
     const listStatusbar = vscode.window.createStatusBarItem(
         vscode.StatusBarAlignment.Left,
@@ -102,8 +260,8 @@ export function activate(context: vscode.ExtensionContext) {
 
 
     // Register the command to open the settings webview
-    const disposable = vscode.commands.registerCommand('project-colors.openSettings', () => {
-        args = readConfig();
+    const disposable = vscode.commands.registerCommand('project-colors.openSettings', async () => {
+        args = await readConfig(vscode.workspace.workspaceFolders?.[0].uri.fsPath || '');
 
         const panel = vscode.window.createWebviewPanel(
             'projectSettings',
@@ -119,14 +277,22 @@ export function activate(context: vscode.ExtensionContext) {
             async (message) => {
             if (message.command === 'setProps') {
                     let newProps: ProjectSettings = message.props;
-                    await saveToConfig('name', newProps.projectName);
-                    await saveToConfig('mainColor', newProps.mainColor);
-                    await saveToConfig('isActivityBarColored', newProps.isActivityBarColored);
-                    await saveToConfig('isTitleBarColored', newProps.isTitleBarColored);
-                    await saveToConfig('isStatusBarColored', newProps.isStatusBarColored);
-                    await saveToConfig('isProjectNameColored', newProps.isProjectNameColored);
-                    await saveToConfig('isActiveItemsColored', newProps.isActiveItemsColored);
-                    await saveToConfig('setWindowTitle', newProps.setWindowTitle);
+                    await saveToWorkspaceConfig('name', newProps.projectName);
+                    await saveToWorkspaceConfig('mainColor', newProps.mainColor);
+                    await saveToWorkspaceConfig('isActivityBarColored', newProps.isActivityBarColored);
+                    await saveToWorkspaceConfig('isTitleBarColored', newProps.isTitleBarColored);
+                    await saveToWorkspaceConfig('isStatusBarColored', newProps.isStatusBarColored);
+                    await saveToWorkspaceConfig('isProjectNameColored', newProps.isProjectNameColored);
+                    await saveToWorkspaceConfig('isActiveItemsColored', newProps.isActiveItemsColored);
+                    await saveToWorkspaceConfig('setWindowTitle', newProps.setWindowTitle);
+
+                    const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+                    if (workspaceFolder) {
+                        const reference: WorkspaceReference = {
+                            directory: workspaceFolder.uri.fsPath
+                        };
+                        await saveWorkspaceReference(reference);
+                    }
 
                     updateListStatusbar(listStatusbar, newProps);
                     updateWorkspaceStatusbar(workspaceStatusbar, newProps);
@@ -150,7 +316,7 @@ export function activate(context: vscode.ExtensionContext) {
     createListCommand(context);
 }
 
-async function saveToConfig(key: string, value: string | boolean): Promise<void> {
+async function saveToWorkspaceConfig(key: string, value: string | boolean): Promise<void> {
     const config = vscode.workspace.getConfiguration('projectColors');
     await config.update(key, value, vscode.ConfigurationTarget.Workspace);
 }
@@ -358,11 +524,6 @@ async function applyColorCustomizations(customizations: any) {
     } catch (error: any) {
         vscode.window.showErrorMessage(`Failed to apply color customizations: ${error.message}`);
     }
-}
-
-function readAllConfigs(): ProjectSettings[] {
-    // Logic to read all user-defined workspaces
-    return [];
 }
 
 export function deactivate() { }
