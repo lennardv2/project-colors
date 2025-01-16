@@ -26,85 +26,76 @@
       "type": "object",
       "title": "Project Colors",
       "properties": {
-        "projectColors.name": {
-          "type": "string",
-          "description": "The name of the current project."
-        },
-        "projectColors.mainColor": {
-          "type": "string",
-          "default": "#681DD7",
-          "description": "The main color used for project theming."
-        },
-        "projectColors.isActivityBarColored": {
-          "type": "boolean",
-          "default": false,
-          "description": "Whether the activity bar should be colored with the main color."
-        },
-        "projectColors.isTitleBarColored": {
-          "type": "boolean",
-          "default": false,
-          "description": "Whether the title bar should be colored with the main color."
-        },
-        "projectColors.isStatusBarColored": {
-          "type": "boolean",
-          "default": false,
-          "description": "Whether the status bar should be colored with the main color."
-        },
-        "projectColors.isProjectNameColored": {
-          "type": "boolean",
-          "default": true,
-          "description": "Whether the project name should be colored with the main color."
-        },
-        "projectColors.isActiveItemsColored": {
-          "type": "boolean",
-          "default": true,
-          "description": "Whether the active items should be colored with the main color."
-        },
-        "projectColors.setWindowTitle": {
-          "type": "boolean",
-          "default": true,
-          "description": "Whether the window title should be set to the project name."
-        },
         "projectColors.workspaces": {
           "type": "array",
-          "description": "List of user-defined workspaces.",
+          "description": "List of workspace references",
           "items": {
             "type": "object",
             "properties": {
-              "projectName": {
+              "directory": {
                 "type": "string",
-                "description": "The name of the workspace."
-              },
-              "mainColor": {
-                "type": "string",
-                "description": "The main color used for the workspace."
-              },
-              "isActivityBarColored": {
-                "type": "boolean",
-                "description": "Whether the activity bar should be colored with the main color."
-              },
-              "isTitleBarColored": {
-                "type": "boolean",
-                "description": "Whether the title bar should be colored with the main color."
-              },
-              "isStatusBarColored": {
-                "type": "boolean",
-                "description": "Whether the status bar should be colored with the main color."
-              },
-              "isProjectNameColored": {
-                "type": "boolean",
-                "description": "Whether the project name should be colored with the main color."
-              },
-              "isActiveItemsColored": {
-                "type": "boolean",
-                "description": "Whether the active items should be colored with the main color."
-              },
-              "setWindowTitle": {
-                "type": "boolean",
-                "description": "Whether the window title should be set to the project name."
+                "description": "Directory of the workspace"
               }
             }
           }
+        },
+        "projectColors.groups": {
+          "type": "array",
+          "description": "List of workspace groups",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Name of the group"
+              },
+              "workspaces": {
+                "type": "array",
+                "description": "List of workspaces in the group",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "directory": {
+                      "type": "string",
+                      "description": "Directory of the workspace"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "projectColors.name": {
+          "type": "string",
+          "description": "Name of the project"
+        },
+        "projectColors.mainColor": {
+          "type": "string",
+          "description": "Main color of the project"
+        },
+        "projectColors.isActivityBarColored": {
+          "type": "boolean",
+          "description": "Whether the activity bar is colored"
+        },
+        "projectColors.isTitleBarColored": {
+          "type": "boolean",
+          "description": "Whether the title bar is colored"
+        },
+        "projectColors.isStatusBarColored": {
+          "type": "boolean",
+          "description": "Whether the status bar is colored"
+        },
+        "projectColors.isProjectNameColored": {
+          "type": "boolean",
+          "description": "Whether the project name is colored"
+        },
+        "projectColors.isActiveItemsColored": {
+          "type": "boolean",
+          "description": "Whether active items are colored"
+        },
+        "projectColors.setWindowTitle": {
+          "type": "boolean",
+          "description": "Whether to set the window title"
         }
       }
     },

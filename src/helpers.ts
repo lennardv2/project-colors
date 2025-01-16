@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { ProjectSettings, WorkspaceReference, WorkspaceGroup } from './extension';
+import { saveToWorkspaceConfig } from './workspaces';
 
 export async function readConfig(directory: string): Promise<ProjectSettings> {
     const uri = vscode.Uri.file(directory);
@@ -62,17 +63,4 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } {
         g: (bigint >> 8) & 255,
         b: bigint & 255,
     };
-}
-
-export async function applyColorCustomizations(customizations: any) {
-    const config = vscode.workspace.getConfiguration();
-    try {
-        await config.update(
-            "workbench.colorCustomizations",
-            customizations["workbench.colorCustomizations"],
-            vscode.ConfigurationTarget.Workspace
-        );
-    } catch (error: any) {
-        vscode.window.showErrorMessage(`Failed to apply color customizations: ${error.message}`);
-    }
 }
