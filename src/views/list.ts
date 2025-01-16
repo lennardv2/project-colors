@@ -161,6 +161,7 @@ export function getListWebview(groups: { name: string; workspaces: (WorkspaceRef
             `).join('')}
           </ul>
           <button class="delete-button" onclick="deleteGroup('${group.name}')">Delete Group</button>
+          <button class="add-button" onclick="addWorkspaceToGroup('${group.name}')">Add Workspace</button>
         </div>
       `).join('')}
       <script>
@@ -180,6 +181,10 @@ export function getListWebview(groups: { name: string; workspaces: (WorkspaceRef
 
         function removeWorkspaceFromGroup(groupName, directory) {
           vscode.postMessage({ command: 'removeWorkspaceFromGroup', groupName, directory });
+        }
+
+        function addWorkspaceToGroup(groupName) {
+          vscode.postMessage({ command: 'showOpenDialog', groupName });
         }
 
         function onDragStart(event, directory) {
