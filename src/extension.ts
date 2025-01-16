@@ -50,6 +50,9 @@ let workspaceStatusbar : vscode.StatusBarItem;
 
 export async function activate(context: vscode.ExtensionContext) {
     let currentWorkspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath || '';
+    if (!currentWorkspace) {
+        return
+    }
     let currentConfig = await readConfig(currentWorkspace);
 
     listStatusbar = vscode.window.createStatusBarItem(
@@ -117,17 +120,34 @@ function createListCommand(context: vscode.ExtensionContext) {
                 if (message.command === 'openWorkspace') {
                     try {
                         console.log(`Opening workspace: ${message.directory}`);
-                        const uri = vscode.Uri.file(message.directory);
-
-                        vscode.commands.executeCommand('vscode.openFolder', uri, { forceNewWindow: false });
+                        if (message.directory.startsWith('vscode-remote://')) {
+                            let uri = vscode.Uri.parse(message.directory);
+                            vscode.commands.executeCommand('vscode.openFolder', uri, { forceNewWindow: false });
+                        }
+                        else if (message.directory.startsWith('http://') || message.directory.startsWith('https://')) {
+                            let uri = vscode.Uri.parse(message.directory);
+                            vscode.env.openExternal(uri);
+                        } else {
+                            let uri = vscode.Uri.file(message.directory);
+                            vscode.commands.executeCommand('vscode.openFolder', uri, { forceNewWindow: false });
+                        }
                     } catch (error: any) {
                         vscode.window.showErrorMessage(`Failed to open workspace: ${error.message}`);
                     }
                 } else if (message.command === 'openWorkspaceInNewWindow') {
                     try {
                         console.log(`Opening workspace in new window: ${message.directory}`);
-                        const uri = vscode.Uri.file(message.directory);
-                        vscode.commands.executeCommand('vscode.openFolder', uri, { forceNewWindow: true });
+                        if (message.directory.startsWith('vscode-remote://')) {
+                            let uri = vscode.Uri.parse(message.directory);
+                            vscode.commands.executeCommand('vscode.openFolder', uri, { forceNewWindow: true });
+                        }
+                        else if (message.directory.startsWith('http://') || message.directory.startsWith('https://')) {
+                            let uri = vscode.Uri.parse(message.directory);
+                            vscode.env.openExternal(uri);
+                        } else {
+                            let uri = vscode.Uri.file(message.directory);
+                            vscode.commands.executeCommand('vscode.openFolder', uri, { forceNewWindow: true });
+                        }
                     } catch (error: any) {
                         vscode.window.showErrorMessage(`Failed to open workspace in new window: ${error.message}`);
                     }
@@ -206,6 +226,16 @@ function createListCommand(context: vscode.ExtensionContext) {
                     if (newGroupName) {
                         await renameWorkspaceGroup(message.groupName, newGroupName);
                         await updateWebview();
+                    }
+                } else if (message.command === 'createNewRemoteWorkspace') {
+                    const groupName = message.groupName;
+                    const input = await vscode.window.showInputBox({
+                        prompt: 'Enter the remote workspace URI (e.g. vscode-remote://...)'
+                    });
+                    if (input) {
+                        const newWorkspace: WorkspaceReference = { directory: input };
+                        await saveWorkspaceToGroup(groupName, newWorkspace);
+                        await updateWebview(); // reuse your existing update logic
                     }
                 }
             },
