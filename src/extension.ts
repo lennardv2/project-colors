@@ -45,7 +45,6 @@ export type WorkspaceGroup = {
     workspaces: WorkspaceReference[];
 }
 
-let listStatusbar : vscode.StatusBarItem;
 let workspaceStatusbar : vscode.StatusBarItem;
 
 export async function activate(context: vscode.ExtensionContext) {
@@ -55,16 +54,16 @@ export async function activate(context: vscode.ExtensionContext) {
     }
     let currentConfig = await readConfig(currentWorkspace);
 
-    listStatusbar = vscode.window.createStatusBarItem(
-        vscode.StatusBarAlignment.Left,
-        Infinity
-    );
+    // listStatusbar = vscode.window.createStatusBarItem(
+    //     vscode.StatusBarAlignment.Left,
+    //     Infinity
+    // );
 
-    updateListStatusbar(listStatusbar, currentConfig);
-    listStatusbar.command = 'project-colors.openList';
-    listStatusbar.show();
+    // updateListStatusbar(listStatusbar, currentConfig);
+    // listStatusbar.command = 'project-colors.openList';
+    // listStatusbar.show();
 
-    context.subscriptions.push(listStatusbar);
+    // context.subscriptions.push(listStatusbar);
 
     // Create a status bar item with low priority to appear farthest to the left
     workspaceStatusbar = vscode.window.createStatusBarItem(
@@ -79,173 +78,12 @@ export async function activate(context: vscode.ExtensionContext) {
     // Ensure the status bar item is available immediately on launch
     context.subscriptions.push(workspaceStatusbar);
 
-    createListCommand(context);
+    // createListCommand(context);
     createWorkspaceSettingsCommand(context);
 
     // Initialize window title on activation
     applyColorCustomizations(generateColorCustomizations(currentConfig));
     updateWindowTitle(currentConfig);
-}
-
-function createListCommand(context: vscode.ExtensionContext) {
-    const disposable = vscode.commands.registerCommand('project-colors.openList', async () => {
-        const panel = vscode.window.createWebviewPanel(
-            'workspaceList',
-            'Workspace List',
-            vscode.ViewColumn.One,
-            { enableScripts: true }
-        );
-
-        async function updateWebview() {
-            const groups = loadWorkspaceGroups();
-            const workspaces = await Promise.all(groups.map(async group => {
-                const workspaceConfigs = await Promise.all(group.workspaces.map(async ref => {
-                    const config = await loadWorkspaceConfig(ref.directory);
-
-                    return config ? { ...ref, ...{ settings: config } } : null;
-                }));
-                return { ...group, workspaces: workspaceConfigs.filter(Boolean) as (WorkspaceReference & { settings: ProjectSettings })[] };
-            }));
-            panel.webview.html = getListWebview(workspaces);
-        }
-
-        panel.onDidChangeViewState(async () => {
-            if (panel.visible) {
-                await updateWebview();
-            }
-        });
-
-        panel.webview.onDidReceiveMessage(
-            async (message) => {
-                if (message.command === 'openWorkspace') {
-                    try {
-                        console.log(`Opening workspace: ${message.directory}`);
-                        if (message.directory.startsWith('vscode-remote://')) {
-                            let uri = vscode.Uri.parse(message.directory);
-                            vscode.commands.executeCommand('vscode.openFolder', uri, { forceNewWindow: false });
-                        }
-                        else if (message.directory.startsWith('http://') || message.directory.startsWith('https://')) {
-                            let uri = vscode.Uri.parse(message.directory);
-                            vscode.env.openExternal(uri);
-                        } else {
-                            let uri = vscode.Uri.file(message.directory);
-                            vscode.commands.executeCommand('vscode.openFolder', uri, { forceNewWindow: false });
-                        }
-                    } catch (error: any) {
-                        vscode.window.showErrorMessage(`Failed to open workspace: ${error.message}`);
-                    }
-                } else if (message.command === 'openWorkspaceInNewWindow') {
-                    try {
-                        console.log(`Opening workspace in new window: ${message.directory}`);
-                        if (message.directory.startsWith('vscode-remote://')) {
-                            let uri = vscode.Uri.parse(message.directory);
-                            vscode.commands.executeCommand('vscode.openFolder', uri, { forceNewWindow: true });
-                        }
-                        else if (message.directory.startsWith('http://') || message.directory.startsWith('https://')) {
-                            let uri = vscode.Uri.parse(message.directory);
-                            vscode.env.openExternal(uri);
-                        } else {
-                            let uri = vscode.Uri.file(message.directory);
-                            vscode.commands.executeCommand('vscode.openFolder', uri, { forceNewWindow: true });
-                        }
-                    } catch (error: any) {
-                        vscode.window.showErrorMessage(`Failed to open workspace in new window: ${error.message}`);
-                    }
-                } else if (message.command === 'createNewWorkspace') {
-                    const uri = await vscode.window.showOpenDialog({
-                        canSelectFolders: true,
-                        canSelectFiles: true,
-                        canSelectMany: false,
-                        openLabel: 'Select Folder or Workspace File',
-                        filters: {
-                            'Workspace Files': ['code-workspace'],
-                            'All Files': ['*']
-                        }
-                    });
-
-                    if (uri && uri[0]) {
-                        const directory = uri[0].fsPath;
-
-                        const newWorkspace: WorkspaceReference = {
-                            directory
-                        };
-
-                        await saveWorkspaceToGroup(message.groupName, newWorkspace);
-                        await updateWebview();
-                    }
-                } else if (message.command === 'deleteWorkspace') {
-                    let result = await vscode.window.showInformationMessage(`Are you sure you want to remove this workspace?`,{ modal: true },'Yes','No');
-                    if (result === 'Yes') {
-                        await deleteWorkspaceReference(message.directory);
-                        await updateWebview();
-                    }
-                } else if (message.command === 'moveWorkspace') {
-                    await moveWorkspace(message.draggedDirectory, message.targetDirectory);
-                    await updateWebview();
-                } else if (message.command === 'createGroup') {
-                    const groupName = message.groupName;
-                    const newGroup: WorkspaceGroup = { name: groupName, workspaces: [] };
-                    await saveWorkspaceGroup(newGroup);
-                    await updateWebview();
-                } else if (message.command === 'editWorkspace') {
-                    // await createWorkspaceSettingsWebview(context, message.directory);
-                } else if (message.command === 'deleteGroup') {
-                    if (await vscode.window.showInformationMessage(`Are you sure you want to remove this group?`,{ modal: true },'Yes','No') === 'Yes') {
-                        await deleteWorkspaceGroup(message.groupName);
-                        await updateWebview();
-                    }
-                } else if (message.command === 'addWorkspaceToGroup') {
-                    const groupName = message.groupName;
-                    const directory = message.directory;
-                    const groups = loadWorkspaceGroups();
-                    const group = groups.find(g => g.name === groupName);
-                    if (group) {
-                        group.workspaces.push({ directory });
-                        await saveWorkspaceGroup(group);
-                        await updateWebview();
-                    }
-                } else if (message.command === 'removeWorkspaceFromGroup') {
-                    if (await vscode.window.showInformationMessage(`Are you sure you want to remove this workspace?`,{ modal: true },'Yes','No') === 'Yes') {
-                        const groupName = message.groupName;
-                        const directory = message.directory;
-                        const groups = loadWorkspaceGroups();
-                        const group = groups.find(g => g.name === groupName);
-                        if (group) {
-                            group.workspaces = group.workspaces.filter(ws => ws.directory !== directory);
-                            await saveWorkspaceGroup(group);
-                            await updateWebview();
-                        }
-                    }
-                } else if (message.command === 'createNewGroup') {
-                    const groupName = await vscode.window.showInputBox({ placeHolder: message.placeholder });
-                    if (groupName) {
-                        panel.webview.postMessage({ command: 'createGroup', groupName });
-                    }
-                } else if (message.command === 'renameGroup') {
-                    const newGroupName = await vscode.window.showInputBox({ value: message.groupName, placeHolder: "New Group Name" });
-                    if (newGroupName) {
-                        await renameWorkspaceGroup(message.groupName, newGroupName);
-                        await updateWebview();
-                    }
-                } else if (message.command === 'createNewRemoteWorkspace') {
-                    const groupName = message.groupName;
-                    const input = await vscode.window.showInputBox({
-                        prompt: 'Enter the remote workspace URI (e.g. vscode-remote://...)'
-                    });
-                    if (input) {
-                        const newWorkspace: WorkspaceReference = { directory: input };
-                        await saveWorkspaceToGroup(groupName, newWorkspace);
-                        await updateWebview(); // reuse your existing update logic
-                    }
-                }
-            },
-            undefined,
-            context.subscriptions
-        );
-
-        await updateWebview();
-    });
-    context.subscriptions.push(disposable);
 }
 
 async function createWorkspaceSettingsWebview(context: vscode.ExtensionContext, directory: string) {
@@ -290,7 +128,7 @@ async function createWorkspaceSettingsWebview(context: vscode.ExtensionContext, 
                 }
 
                 if (editingIsCurrentWorkspace) {
-                    updateListStatusbar(listStatusbar, newProps);
+                    // updateListStatusbar(listStatusbar, newProps);
                     updateWorkspaceStatusbar(workspaceStatusbar, newProps);
                     updateWindowTitle(newProps);
                 }
@@ -311,18 +149,6 @@ function createWorkspaceSettingsCommand(context: vscode.ExtensionContext) {
         await createWorkspaceSettingsWebview(context, vscode.workspace.workspaceFolders?.[0].uri.fsPath || '');
     });
     context.subscriptions.push(disposable);
-}
-
-function updateListStatusbar(item: vscode.StatusBarItem, args: ProjectSettings): void {
-    item.text = '$(multiple-windows)';
-    if (args.isProjectNameColored || args.isStatusBarColored) {
-        item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground'); // Use warning color for contrast
-        item.color = new vscode.ThemeColor('statusBarItem.warningForeground'); // Use warning foreground color for contrast
-    } else {
-        item.backgroundColor = undefined;
-        item.color = undefined;
-    }
-    item.tooltip = `Show all projects`;
 }
 
 function updateWorkspaceStatusbar(item: vscode.StatusBarItem, args: ProjectSettings): void {

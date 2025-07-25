@@ -26,45 +26,6 @@
       "type": "object",
       "title": "Project Colors",
       "properties": {
-        "projectColors.workspaces": {
-          "type": "array",
-          "description": "List of workspace references",
-          "items": {
-            "type": "object",
-            "properties": {
-              "directory": {
-                "type": "string",
-                "description": "Directory of the workspace"
-              }
-            }
-          }
-        },
-        "projectColors.groups": {
-          "type": "array",
-          "description": "List of workspace groups",
-          "items": {
-            "type": "object",
-            "properties": {
-              "name": {
-                "type": "string",
-                "description": "Name of the group"
-              },
-              "workspaces": {
-                "type": "array",
-                "description": "List of workspaces in the group",
-                "items": {
-                  "type": "object",
-                  "properties": {
-                    "directory": {
-                      "type": "string",
-                      "description": "Directory of the workspace"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
         "projectColors.name": {
           "type": "string",
           "description": "Name of the project"
@@ -103,10 +64,6 @@
       {
         "command": "project-colors.openSettings",
         "title": "Customize Project Colors"
-      },
-      {
-        "command": "project-colors.openList",
-        "title": "Open Workspace List"
       }
     ]
   },
