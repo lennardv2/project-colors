@@ -84,6 +84,18 @@ export async function activate(context: vscode.ExtensionContext) {
     // Initialize window title on activation
     applyColorCustomizations(generateColorCustomizations(currentConfig));
     updateWindowTitle(currentConfig);
+
+    // Listen for configuration changes
+    context.subscriptions.push(
+        vscode.workspace.onDidChangeConfiguration(async (e) => {
+            if (e.affectsConfiguration('projectColors')) {
+                const updatedConfig = await readConfig(currentWorkspace);
+                applyColorCustomizations(generateColorCustomizations(updatedConfig));
+                updateWorkspaceStatusbar(workspaceStatusbar, updatedConfig);
+                updateWindowTitle(updatedConfig);
+            }
+        })
+    );
 }
 
 async function createWorkspaceSettingsWebview(context: vscode.ExtensionContext, directory: string) {
