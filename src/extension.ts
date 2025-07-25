@@ -122,31 +122,36 @@ async function createWorkspaceSettingsWebview(context: vscode.ExtensionContext, 
             if (message.command === 'setProps') {
                 let editingIsCurrentWorkspace = directory === vscode.workspace.workspaceFolders?.[0].uri.fsPath;
                 let newProps: ProjectSettings = message.props;
-                await saveToWorkspaceConfig('name', newProps.projectName);
-                await saveToWorkspaceConfig('mainColor', newProps.mainColor);
-                await saveToWorkspaceConfig('isActivityBarColored', newProps.isActivityBarColored);
-                await saveToWorkspaceConfig('isTitleBarColored', newProps.isTitleBarColored);
-                await saveToWorkspaceConfig('isStatusBarColored', newProps.isStatusBarColored);
-                await saveToWorkspaceConfig('isProjectNameColored', newProps.isProjectNameColored);
-                await saveToWorkspaceConfig('isActiveItemsColored', newProps.isActiveItemsColored);
-                await saveToWorkspaceConfig('setWindowTitle', newProps.setWindowTitle);
+                
+                // Apply colors immediately for instant feedback (don't await)
+                applyColorCustomizations(generateColorCustomizations(newProps));
+                
+                if (editingIsCurrentWorkspace) {
+                    updateWorkspaceStatusbar(workspaceStatusbar, newProps);
+                    updateWindowTitle(newProps);
+                }
+                
+                // Save configurations in parallel
+                const savePromises = [
+                    saveToWorkspaceConfig('name', newProps.projectName),
+                    saveToWorkspaceConfig('mainColor', newProps.mainColor),
+                    saveToWorkspaceConfig('isActivityBarColored', newProps.isActivityBarColored),
+                    saveToWorkspaceConfig('isTitleBarColored', newProps.isTitleBarColored),
+                    saveToWorkspaceConfig('isStatusBarColored', newProps.isStatusBarColored),
+                    saveToWorkspaceConfig('isProjectNameColored', newProps.isProjectNameColored),
+                    saveToWorkspaceConfig('isActiveItemsColored', newProps.isActiveItemsColored),
+                    saveToWorkspaceConfig('setWindowTitle', newProps.setWindowTitle)
+                ];
 
                 const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
                 if (workspaceFolder) {
                     const reference: WorkspaceReference = {
                         directory: workspaceFolder.uri.fsPath
                     };
-                    await saveWorkspaceReference(reference);
+                    savePromises.push(saveWorkspaceReference(reference));
                 }
 
-                if (editingIsCurrentWorkspace) {
-                    // updateListStatusbar(listStatusbar, newProps);
-                    updateWorkspaceStatusbar(workspaceStatusbar, newProps);
-                    updateWindowTitle(newProps);
-                }
-               
-
-                await applyColorCustomizations(generateColorCustomizations(newProps));
+                await Promise.all(savePromises);
             }
         },
         undefined,
