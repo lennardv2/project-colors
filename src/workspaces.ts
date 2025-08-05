@@ -1,16 +1,16 @@
 import * as vscode from 'vscode';
-import { ProjectSettings, WorkspaceReference, WorkspaceGroup } from './extension';
+import { WindowSettings, WindowReference, WindowGroup } from './extension';
 import { getContrastColor, generateRandomColor } from './helpers';
 
-export async function loadWorkspaces(): Promise<(WorkspaceReference & { settings: ProjectSettings })[]> {
-    const references = loadWorkspaceReferences();
+export async function loadWorkspaces(): Promise<(WindowReference & { settings: WindowSettings })[]> {
+    const references = loadWindowReferences();
     return await Promise.all(references.map(async ref => {
         const config = await loadWorkspaceConfig(ref.directory);
         return config ? { ...ref, ...{ settings: config } } : null;
-    })).then(results => results.filter(Boolean) as (WorkspaceReference & { settings: ProjectSettings })[]);
+    })).then(results => results.filter(Boolean) as (WindowReference & { settings: WindowSettings })[]);
 }
 
-export async function readConfig(directory: string): Promise<ProjectSettings> {
+export async function readConfig(directory: string): Promise<WindowSettings> {
     // console.log('[DEBUG] readConfig called for directory:', directory);
     const uri = vscode.Uri.file(directory);
     const configPath = directory.endsWith('.code-workspace') ? uri : uri.with({ path: `${uri.path}/.vscode/settings.json` });
@@ -26,33 +26,33 @@ export async function readConfig(directory: string): Promise<ProjectSettings> {
         settings = {};
     }
 
-    const fallbackProjectName = directory.split('/').pop() || 'Untitled Project';
-    const projectColors = directory.endsWith('.code-workspace') ? (settings['settings'] || {}) : settings;
-    // console.log('[DEBUG] Extracted projectColors:', JSON.stringify(projectColors, null, 2));
+    const fallbackWindowName = directory.split('/').pop() || 'Untitled Window';
+    const windowColorSettings = directory.endsWith('.code-workspace') ? (settings['settings'] || {}) : settings;
+    // console.log('[DEBUG] Extracted windowColorSettings:', JSON.stringify(windowColorSettings, null, 2));
     
     // Only generate random color if no color exists
-    const existingColor = projectColors['projectColors.mainColor'];
+    const existingColor = windowColorSettings['windowColor.mainColor'];
     const mainColor = existingColor || generateRandomColor();
     // console.log('[DEBUG] Using main color:', mainColor, '(existing:', existingColor, ')');
 
     const result = {
-        projectName: projectColors['projectColors.name'] || fallbackProjectName,
+        windowName: windowColorSettings['windowColor.name'] || fallbackWindowName,
         mainColor: mainColor,
         mainColorContrast: getContrastColor(mainColor),
-        isActivityBarColored: projectColors['projectColors.isActivityBarColored'] ?? false,
-        isTitleBarColored: projectColors['projectColors.isTitleBarColored'] ?? false,
-        isStatusBarColored: projectColors['projectColors.isStatusBarColored'] ?? true,
-        isProjectNameColored: projectColors['projectColors.isProjectNameColored'] ?? true,
-        isActiveItemsColored: projectColors['projectColors.isActiveItemsColored'] ?? true,
-        setWindowTitle: projectColors['projectColors.setWindowTitle'] ?? true
+        isActivityBarColored: windowColorSettings['windowColor.isActivityBarColored'] ?? false,
+        isTitleBarColored: windowColorSettings['windowColor.isTitleBarColored'] ?? false,
+        isStatusBarColored: windowColorSettings['windowColor.isStatusBarColored'] ?? true,
+        isWindowNameColored: windowColorSettings['windowColor.isWindowNameColored'] ?? true,
+        isActiveItemsColored: windowColorSettings['windowColor.isActiveItemsColored'] ?? true,
+        setWindowTitle: windowColorSettings['windowColor.setWindowTitle'] ?? true
     };
     // console.log('[DEBUG] readConfig returning:', JSON.stringify(result, null, 2));
     return result;
 }
 
-export async function saveWorkspaceReference(reference: WorkspaceReference): Promise<void> {
-    const config = vscode.workspace.getConfiguration('projectColors');
-    const references = config.get<WorkspaceReference[]>('workspaces') || [];
+export async function saveWindowReference(reference: WindowReference): Promise<void> {
+    const config = vscode.workspace.getConfiguration('windowColor');
+    const references = config.get<WindowReference[]>('workspaces') || [];
     const existingIndex = references.findIndex(ref => ref.directory === reference.directory);
 
     if (existingIndex >= 0) {
@@ -64,48 +64,48 @@ export async function saveWorkspaceReference(reference: WorkspaceReference): Pro
     await config.update('workspaces', references, vscode.ConfigurationTarget.Global);
 }
 
-export async function deleteWorkspaceReference(directory: string): Promise<void> {
-    const config = vscode.workspace.getConfiguration('projectColors');
-    let references = config.get<WorkspaceReference[]>('workspaces') || [];
+export async function deleteWindowReference(directory: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration('windowColor');
+    let references = config.get<WindowReference[]>('workspaces') || [];
     references = references.filter(ref => ref.directory !== directory);
     await config.update('workspaces', references, vscode.ConfigurationTarget.Global);
 }
 
 export async function moveWorkspace(draggedDirectory: string, targetDirectory: string): Promise<void> {
-    const groups = loadWorkspaceGroups();
+    const groups = loadWindowGroups();
 
-    const draggedGroup = groups.find(group => group.workspaces.some(workspace => workspace.directory === draggedDirectory));
-    const targetGroup = groups.find(group => group.workspaces.some(workspace => workspace.directory === targetDirectory));
+    const draggedGroup = groups.find(group => group.windows.some(window => window.directory === draggedDirectory));
+    const targetGroup = groups.find(group => group.windows.some(window => window.directory === targetDirectory));
 
     if (!draggedGroup || !targetGroup) {
         throw new Error('Both dragged and target directories must belong to a group');
     }
 
-    const draggedWorkspace = draggedGroup.workspaces.find(workspace => workspace.directory === draggedDirectory);
-    if (!draggedWorkspace) {
-        throw new Error('Dragged workspace not found in its group');
+    const draggedWindow = draggedGroup.windows.find(window => window.directory === draggedDirectory);
+    if (!draggedWindow) {
+        throw new Error('Dragged window not found in its group');
     }
 
-    // Remove the workspace from the dragged group
-    draggedGroup.workspaces = draggedGroup.workspaces.filter(workspace => workspace.directory !== draggedDirectory);
+    // Remove the window from the dragged group
+    draggedGroup.windows = draggedGroup.windows.filter(window => window.directory !== draggedDirectory);
 
     // If the dragged and target directories are in the same group, update the group
     if (draggedGroup === targetGroup) {
-        const targetIndex = targetGroup.workspaces.findIndex(workspace => workspace.directory === targetDirectory);
-        targetGroup.workspaces.splice(targetIndex, 0, draggedWorkspace);
+        const targetIndex = targetGroup.windows.findIndex(window => window.directory === targetDirectory);
+        targetGroup.windows.splice(targetIndex, 0, draggedWindow);
     } else {
         // Otherwise, move it to the new group before the target
-        const targetIndex = targetGroup.workspaces.findIndex(workspace => workspace.directory === targetDirectory);
-        targetGroup.workspaces.splice(targetIndex, 0, draggedWorkspace);
+        const targetIndex = targetGroup.windows.findIndex(window => window.directory === targetDirectory);
+        targetGroup.windows.splice(targetIndex, 0, draggedWindow);
     }
 
-    await saveWorkspaceGroup(draggedGroup);
-    await saveWorkspaceGroup(targetGroup);
+    await saveWindowGroup(draggedGroup);
+    await saveWindowGroup(targetGroup);
 }
 
-export async function saveWorkspaceGroup(group: WorkspaceGroup): Promise<void> {
-    const config = vscode.workspace.getConfiguration('projectColors');
-    const groups = config.get<WorkspaceGroup[]>('groups') || [];
+export async function saveWindowGroup(group: WindowGroup): Promise<void> {
+    const config = vscode.workspace.getConfiguration('windowColor');
+    const groups = config.get<WindowGroup[]>('groups') || [];
     const existingIndex = groups.findIndex(g => g.name === group.name);
 
     if (existingIndex >= 0) {
@@ -117,24 +117,24 @@ export async function saveWorkspaceGroup(group: WorkspaceGroup): Promise<void> {
     await config.update('groups', groups, vscode.ConfigurationTarget.Global);
 }
 
-export async function deleteWorkspaceGroup(groupName: string): Promise<void> {
-    const config = vscode.workspace.getConfiguration('projectColors');
-    let groups = config.get<WorkspaceGroup[]>('groups') || [];
+export async function deleteWindowGroup(groupName: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration('windowColor');
+    let groups = config.get<WindowGroup[]>('groups') || [];
     groups = groups.filter(g => g.name !== groupName);
     await config.update('groups', groups, vscode.ConfigurationTarget.Global);
 }
 
-export function loadWorkspaceReferences(): WorkspaceReference[] {
-    const config = vscode.workspace.getConfiguration('projectColors');
-    return config.get<WorkspaceReference[]>('workspaces') || [];
+export function loadWindowReferences(): WindowReference[] {
+    const config = vscode.workspace.getConfiguration('windowColor');
+    return config.get<WindowReference[]>('workspaces') || [];
 }
 
-export function loadWorkspaceGroups(): WorkspaceGroup[] {
-    const config = vscode.workspace.getConfiguration('projectColors');
-    return config.get<WorkspaceGroup[]>('groups') || [];
+export function loadWindowGroups(): WindowGroup[] {
+    const config = vscode.workspace.getConfiguration('windowColor');
+    return config.get<WindowGroup[]>('groups') || [];
 }
 
-export async function loadWorkspaceConfig(directory: string): Promise<ProjectSettings | null> {
+export async function loadWorkspaceConfig(directory: string): Promise<WindowSettings | null> {
     try {
         return await readConfig(directory);
     } catch (error: any) {
@@ -145,22 +145,22 @@ export async function loadWorkspaceConfig(directory: string): Promise<ProjectSet
 
 export async function saveToWorkspaceConfig(key: string, value: string | boolean): Promise<void> {
     // console.log('[DEBUG] saveToWorkspaceConfig called with key:', key, 'value:', value);
-    const config = vscode.workspace.getConfiguration('projectColors');
+    const config = vscode.workspace.getConfiguration('windowColor');
     await config.update(key, value, vscode.ConfigurationTarget.Workspace);
     // console.log('[DEBUG] saveToWorkspaceConfig completed for key:', key);
 }
 
-export async function saveWorkspaceToGroup(groupName: string, workspace: WorkspaceReference): Promise<void> {
-    const config = vscode.workspace.getConfiguration('projectColors');
-    const groups = config.get<WorkspaceGroup[]>('groups') || [];
-    const group = groups.find(g => g.name === groupName) || { name: groupName, workspaces: [] };
-    group.workspaces.push(workspace);
-    await saveWorkspaceGroup(group);
+export async function saveWorkspaceToGroup(groupName: string, workspace: WindowReference): Promise<void> {
+    const config = vscode.workspace.getConfiguration('windowColor');
+    const groups = config.get<WindowGroup[]>('groups') || [];
+    const group = groups.find(g => g.name === groupName) || { name: groupName, windows: [] };
+    group.windows.push(workspace);
+    await saveWindowGroup(group);
 }
 
-export async function renameWorkspaceGroup(oldName: string, newName: string): Promise<void> {
-    const config = vscode.workspace.getConfiguration('projectColors');
-    let groups = config.get<WorkspaceGroup[]>('groups') || [];
+export async function renameWindowGroup(oldName: string, newName: string): Promise<void> {
+    const config = vscode.workspace.getConfiguration('windowColor');
+    let groups = config.get<WindowGroup[]>('groups') || [];
     const group = groups.find(g => g.name === oldName);
 
     if (group) {

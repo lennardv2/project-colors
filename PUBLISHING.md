@@ -42,15 +42,9 @@ Create these files in `/home/app/` (they're already in .gitignore):
 }
 ```
 
-### 2. GitHub Actions (Automated)
+### 2. Manual Publishing Only
 
-The repository is configured to publish automatically on releases using GitHub Actions secrets.
-
-#### Required GitHub Secrets:
-1. Go to repository Settings → Secrets and variables → Actions
-2. Add these secrets:
-   - `VSCE_PAT`: Your Azure DevOps Personal Access Token
-   - `OVSX_PAT`: Your Open VSX Registry Personal Access Token
+This extension is published manually using the commands below. GitHub Actions have been removed.
 
 ## Getting Tokens
 
@@ -73,7 +67,7 @@ The repository is configured to publish automatically on releases using GitHub A
 ## Security Notes
 
 - ✅ Token files are in .gitignore and will never be committed
-- ✅ GitHub Actions uses encrypted secrets
+- ✅ Manual publishing with secure token handling
 - ✅ Environment variables are cleared after use
 - ⚠️ Never commit tokens to version control
 - ⚠️ Rotate tokens periodically for security

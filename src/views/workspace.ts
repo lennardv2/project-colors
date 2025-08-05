@@ -1,13 +1,13 @@
-import { ProjectSettings } from "../extension";
+import { WindowSettings } from "../extension";
 
-export function getWorkspaceWebview(args: ProjectSettings, version?: string): string {
+export function getWorkspaceWebview(args: WindowSettings, version?: string): string {
     return `
     <!DOCTYPE html>
     <html lang="en">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Workspace Settings</title>
+      <title>Window Settings</title>
       <style>
         body {
           font-family: var(--vscode-font-family, Arial, sans-serif);
@@ -131,11 +131,11 @@ export function getWorkspaceWebview(args: ProjectSettings, version?: string): st
     </head>
     <body>
       <div class="container">
-        <h1>Workspace Colors</h1>
+        <h1>Set Window Color & Name</h1>
     
         <div class="group">
-            <label for="projectName">Workspace Name:</label>
-            <input type="text" id="projectName" value="${args.projectName}" placeholder="Enter project name">
+            <label for="projectName">Window Name:</label>
+            <input type="text" id="projectName" value="${args.windowName}" placeholder="Enter window name">
 
             <div class="group-compact">
                 <div class="toggle-container">
@@ -169,8 +169,8 @@ export function getWorkspaceWebview(args: ProjectSettings, version?: string): st
 
             <div class="group-compact">
                 <div class="toggle-container">
-                    <input type="checkbox" id="isProjectNameColored" ${args.isProjectNameColored ? 'checked' : ''}>
-                    <label for="isProjectNameColored">Colorize Workspace Name</label>
+                    <input type="checkbox" id="isProjectNameColored" ${args.isWindowNameColored ? 'checked' : ''}">
+                    <label for="isProjectNameColored">Colorize Window Name</label>
                 </div>
             </div>
 
@@ -191,7 +191,7 @@ export function getWorkspaceWebview(args: ProjectSettings, version?: string): st
 
         <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--vscode-input-border); text-align: center;">
             <p style="font-size: 0.8rem; color: var(--vscode-descriptionForeground); margin: 0;">
-                Project Colors v${version || '1.1.3'}
+                Set Window Color & Name v${version || '1.1.3'}
             </p>
         </div>
 
@@ -209,18 +209,18 @@ export function getWorkspaceWebview(args: ProjectSettings, version?: string): st
         const setWindowTitle = document.getElementById('setWindowTitle');
 
         let props = {
-            projectName: projectNameInput.value,
+            windowName: projectNameInput.value,
             mainColor: colorPicker.value,
             isActivityBarColored: isActivityBarColored.checked,
             isTitleBarColored: isTitleBarColored.checked,
-            isProjectNameColored: isProjectNameColored.checked,
+            isWindowNameColored: isProjectNameColored.checked,
             isStatusBarColored: isStatusBarColored.checked,
             isActiveItemsColored: isActiveItemsColored.checked,
             setWindowTitle: setWindowTitle.checked
         };
 
         projectNameInput.addEventListener('input', () => {
-          props.projectName = projectNameInput.value;
+          props.windowName = projectNameInput.value;
           postMessageDebouncedLong({ command: 'setProps', props });
         });
 
@@ -241,7 +241,7 @@ export function getWorkspaceWebview(args: ProjectSettings, version?: string): st
         });
 
         isProjectNameColored.addEventListener('change', () => {
-            props.isProjectNameColored = isProjectNameColored.checked;
+            props.isWindowNameColored = isProjectNameColored.checked;
             postMessageDebounced({ command: 'setProps', props });
         });
 

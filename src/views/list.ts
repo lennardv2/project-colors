@@ -1,13 +1,13 @@
-import { ProjectSettings, WorkspaceReference } from "../extension";
+import { WindowSettings, WindowReference } from "../extension";
 
-export function getListWebview(groups: { name: string; workspaces: (WorkspaceReference & { settings: ProjectSettings })[] }[]): string {
+export function getListWebview(groups: { name: string; windows: (WindowReference & { settings: WindowSettings })[] }[]): string {
     return `
     <!DOCTYPE html>
     <html lang="en">
     <head>
       <meta charset="UTF-8">
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>Workspaces</title>
+      <title>Windows</title>
       <style>
         body {
           font-family: var(--vscode-font-family, Arial, sans-serif);
@@ -190,7 +190,7 @@ export function getListWebview(groups: { name: string; workspaces: (WorkspaceRef
     <body>
       <div class="header">
         <h1>
-          Workspaces
+          Windows
         </h1>
         <button class="add-button" onclick="createNewGroup()" title="Create New Group">
           <svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> 
@@ -207,37 +207,37 @@ export function getListWebview(groups: { name: string; workspaces: (WorkspaceRef
             <button class="rename-button" onclick="renameGroup('${group.name}')" title="Rename Group">
                 <svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
             </button>
-            <button class="add-button" onclick="addWorkspaceToGroup('${group.name}')" title="Add Workspace to Group">
+            <button class="add-button" onclick="addWorkspaceToGroup('${group.name}')" title="Add Window to Group">
                 <svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z"/></svg> 
             </button>
-            <button class="add-button" onclick="addRemoteWorkspaceToGroup('${group.name}')" title="Add Remote Workspace to Group">
+            <button class="add-button" onclick="addRemoteWorkspaceToGroup('${group.name}')" title="Add Remote Window to Group">
               <svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                 <!-- ...icon data... -->
               </svg> 
             </button>
           </div>
           <ul>
-            ${group.workspaces.map(workspace => `
-              <li class="workspace-item" draggable="true" ondragstart="onDragStart(event, '${workspace.directory}')" ondrop="onDrop(event, '${workspace.directory}')" ondragover="onDragOver(event)">
-                <div class="workspace-color" style="background-color: ${workspace.settings.mainColor}; color: ${workspace.settings.mainColorContrast}">
+            ${group.windows.map(window => `
+              <li class="workspace-item" draggable="true" ondragstart="onDragStart(event, '${window.directory}')" ondrop="onDrop(event, '${window.directory}')" ondragover="onDragOver(event)">
+                <div class="workspace-color" style="background-color: ${window.settings.mainColor}; color: ${window.settings.mainColorContrast}">
                   <span class="workspace-name">
-                    ${workspace.settings.projectName}
+                    ${window.settings.windowName}
                   </span>
                   <span class="workspace-directory">
-                    ${workspace.directory}
+                    ${window.directory}
                   </span>
                 </div>
                 <div class="workspace-buttons">
-                  <button class="edit-button" onclick="editWorkspace('${group.name}', '${workspace.directory}')" title="Edit Workspace">
+                  <button class="edit-button" onclick="editWorkspace('${group.name}', '${window.directory}')" title="Edit Window">
                     <svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
                   </button>
-                  <button class="delete-button" onclick="removeWorkspaceFromGroup('${group.name}', '${workspace.directory}')" title="Remove Workspace from Group">
+                  <button class="delete-button" onclick="removeWorkspaceFromGroup('${group.name}', '${window.directory}')" title="Remove Window from Group">
                     <svg fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M0 0h24v24H0V0z" fill="none"/><path d="M16 9v10H8V9h8m-1.5-6h-5l-1 1H5v2h14V4h-3.5l-1-1zM18 7H6v12c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7z"/></svg> 
                   </button>
-                  <button class="ml-auto external-button" onclick="openWorkspaceInNewWindow('${workspace.directory}')" title="Open Workspace in New Window">
+                  <button class="ml-auto external-button" onclick="openWorkspaceInNewWindow('${window.directory}')" title="Open Window in New Window">
                     <svg class="w-6 h-6" fill="currentColor" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m13 3 3.293 3.293-7 7 1.414 1.414 7-7L21 11V3z"/><path d="M19 19H5V5h7l-2-2H5c-1.103 0-2 .897-2 2v14c0 1.103.897 2 2 2h14c1.103 0 2-.897 2-2v-5l-2-2v7z"/></svg> 
                   </button>
-                  <button class="open-button" onclick="openWorkspace('${workspace.directory}')" title="Open Workspace">
+                  <button class="open-button" onclick="openWorkspace('${window.directory}')" title="Open Window">
                     <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"> <path fill-rule="evenodd" clip-rule="evenodd" d="M3 10C3 9.58579 3.33579 9.25 3.75 9.25L14.3879 9.25L10.2302 5.29062C9.93159 5.00353 9.92228 4.52875 10.2094 4.23017C10.4965 3.93159 10.9713 3.92228 11.2698 4.20937L16.7698 9.45937C16.9169 9.60078 17 9.79599 17 10C17 10.204 16.9169 10.3992 16.7698 10.5406L11.2698 15.7906C10.9713 16.0777 10.4965 16.0684 10.2094 15.7698C9.92228 15.4713 9.93159 14.9965 10.2302 14.7094L14.3879 10.75L3.75 10.75C3.33579 10.75 3 10.4142 3 10Z"/> </svg> 
                   </button>
                 </div>

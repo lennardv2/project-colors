@@ -1,30 +1,30 @@
 import * as vscode from 'vscode';
-import { ProjectSettings, WorkspaceReference, WorkspaceGroup } from './extension';
+import { WindowSettings, WindowReference, WindowGroup } from './extension';
 import { saveToWorkspaceConfig } from './workspaces';
 
-export async function readConfig(directory: string): Promise<ProjectSettings> {
+export async function readConfig(directory: string): Promise<WindowSettings> {
     const uri = vscode.Uri.file(directory);
     const configPath = directory.endsWith('.code-workspace') ? uri : uri.with({ path: `${uri.path}/.vscode/settings.json` });
     const config = await vscode.workspace.fs.readFile(configPath);
     const settings = JSON.parse(config.toString());
 
-    const fallbackProjectName = directory.split('/').pop() || 'Untitled Project';
+    const fallbackWindowName = directory.split('/').pop() || 'Untitled Window';
 
-    const projectColors = directory.endsWith('.code-workspace') ? settings['settings'] : settings;
+    const windowColorSettings = directory.endsWith('.code-workspace') ? settings['settings'] : settings;
     
     // Only generate random color if no color exists
-    const existingColor = projectColors['projectColors.mainColor'];
+    const existingColor = windowColorSettings['windowColor.mainColor'];
     const mainColor = existingColor || generateRandomColor();
 
     return {
-        projectName: projectColors['projectColors.name'] || fallbackProjectName,
+        windowName: windowColorSettings['windowColor.name'] || fallbackWindowName,
         mainColor: mainColor,
-        isActivityBarColored: projectColors['projectColors.isActivityBarColored'] ?? false,
-        isTitleBarColored: projectColors['projectColors.isTitleBarColored'] ?? false,
-        isStatusBarColored: projectColors['projectColors.isStatusBarColored'] ?? true,
-        isProjectNameColored: projectColors['projectColors.isProjectNameColored'] ?? true,
-        isActiveItemsColored: projectColors['projectColors.isActiveItemsColored'] ?? true,
-        setWindowTitle: projectColors['projectColors.setWindowTitle'] ?? true
+        isActivityBarColored: windowColorSettings['windowColor.isActivityBarColored'] ?? false,
+        isTitleBarColored: windowColorSettings['windowColor.isTitleBarColored'] ?? false,
+        isStatusBarColored: windowColorSettings['windowColor.isStatusBarColored'] ?? true,
+        isWindowNameColored: windowColorSettings['windowColor.isWindowNameColored'] ?? true,
+        isActiveItemsColored: windowColorSettings['windowColor.isActiveItemsColored'] ?? true,
+        setWindowTitle: windowColorSettings['windowColor.setWindowTitle'] ?? true
     };
 }
 

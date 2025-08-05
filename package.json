@@ -1,17 +1,17 @@
 {
-    "name": "project-colors",
-    "displayName": "Workspace Name & Colors",
-    "description": "Customize workspace colors and specify a name to distinguish multiple windows. Keywords: project workspace colors peacock colorize",
-    "version": "1.1.3",
+    "name": "set-window-color-name",
+    "displayName": "Set Window Color & Name",
+    "description": "Set window colors and specify a name to distinguish multiple windows. Keywords: window colors peacock colorize",
+    "version": "2.0.0",
     "engines": {
         "vscode": "^1.60.0"
     },
-    "homepage": "https://github.com/lennardv2/project-colors",
+    "homepage": "https://github.com/lennardv2/vscode-window-colors-name",
     "icon": "img/logo.png",
     "publisher": "lennardv",
     "repository": {
         "type": "git",
-        "url": "https://github.com/lennardv2/project-colors"
+        "url": "https://github.com/lennardv2/vscode-window-colors-name"
     },
     "categories": [
         "Themes",
@@ -24,57 +24,57 @@
     "contributes": {
         "configuration": {
             "type": "object",
-            "title": "Project Colors",
+            "title": "Set Window Color & Name",
             "properties": {
-                "projectColors.name": {
+                "windowColor.name": {
                     "type": "string",
                     "description": "Name of the project"
                 },
-                "projectColors.mainColor": {
+                "windowColor.mainColor": {
                     "type": "string",
                     "description": "Main color of the project"
                 },
-                "projectColors.isActivityBarColored": {
+                "windowColor.isActivityBarColored": {
                     "type": "boolean",
                     "description": "Whether the activity bar is colored"
                 },
-                "projectColors.isTitleBarColored": {
+                "windowColor.isTitleBarColored": {
                     "type": "boolean",
                     "description": "Whether the title bar is colored"
                 },
-                "projectColors.isStatusBarColored": {
+                "windowColor.isStatusBarColored": {
                     "type": "boolean",
                     "description": "Whether the status bar is colored"
                 },
-                "projectColors.isProjectNameColored": {
+                "windowColor.isWindowNameColored": {
                     "type": "boolean",
-                    "description": "Whether the project name is colored"
+                    "description": "Whether the window name is colored"
                 },
-                "projectColors.isActiveItemsColored": {
+                "windowColor.isActiveItemsColored": {
                     "type": "boolean",
                     "description": "Whether active items are colored"
                 },
-                "projectColors.setWindowTitle": {
+                "windowColor.setWindowTitle": {
                     "type": "boolean",
                     "description": "Whether to set the window title"
                 },
-                "projectColors.workspaces": {
+                "windowColor.workspaces": {
                     "type": "array",
-                    "description": "List of workspace references",
+                    "description": "List of window references",
                     "default": [],
                     "items": {
                         "type": "object",
                         "properties": {
                             "directory": {
                                 "type": "string",
-                                "description": "Path to the workspace directory"
+                                "description": "Path to the window directory"
                             }
                         }
                     }
                 },
-                "projectColors.groups": {
+                "windowColor.groups": {
                     "type": "array",
-                    "description": "List of workspace groups",
+                    "description": "List of window groups",
                     "default": [],
                     "items": {
                         "type": "object",
@@ -85,13 +85,13 @@
                             },
                             "workspaces": {
                                 "type": "array",
-                                "description": "Workspaces in this group",
+                                "description": "Windows in this group",
                                 "items": {
                                     "type": "object",
                                     "properties": {
                                         "directory": {
                                             "type": "string",
-                                            "description": "Path to the workspace directory"
+                                            "description": "Path to the window directory"
                                         }
                                     }
                                 }
@@ -103,8 +103,8 @@
         },
         "commands": [
             {
-                "command": "project-colors.openSettings",
-                "title": "Customize Project Colors"
+                "command": "set-window-color-name.openSettings",
+                "title": "Customize Window Color & Name"
             }
         ]
     },

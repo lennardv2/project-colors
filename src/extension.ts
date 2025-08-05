@@ -11,38 +11,38 @@ import {
 import {
     applyColorCustomizations,
     readConfig,
-    deleteWorkspaceReference,
+    deleteWindowReference,
     moveWorkspace,
-    saveWorkspaceReference,
-    saveWorkspaceGroup,
-    deleteWorkspaceGroup,
-    loadWorkspaceReferences,
-    loadWorkspaceGroups,
+    saveWindowReference,
+    saveWindowGroup,
+    deleteWindowGroup,
+    loadWindowReferences,
+    loadWindowGroups,
     loadWorkspaceConfig,
     saveToWorkspaceConfig,
     saveWorkspaceToGroup,
-    renameWorkspaceGroup
+    renameWindowGroup
 } from './workspaces';
 
-export type ProjectSettings = {
-    projectName: string;
+export type WindowSettings = {
+    windowName: string;
     mainColor: string;
     mainColorContrast?: string;
     isActivityBarColored: boolean;
     isTitleBarColored: boolean;
     isStatusBarColored: boolean;
-    isProjectNameColored: boolean;
+    isWindowNameColored: boolean;
     isActiveItemsColored: boolean;
     setWindowTitle: boolean;
 }
 
-export type WorkspaceReference = {
+export type WindowReference = {
     directory: string;
 }
 
-export type WorkspaceGroup = {
+export type WindowGroup = {
     name: string;
-    workspaces: WorkspaceReference[];
+    windows: WindowReference[];
 }
 
 let workspaceStatusbar : vscode.StatusBarItem;
@@ -60,17 +60,17 @@ export async function activate(context: vscode.ExtensionContext) {
     }
     
     if (!currentWorkspace) {
-        return
+        return;
     }
     // console.log('[DEBUG] Reading initial config for workspace:', currentWorkspace);
     let currentConfig = await readConfig(currentWorkspace);
     // console.log('[DEBUG] Initial config read:', JSON.stringify(currentConfig, null, 2));
     
     // Check if we need to save default values
-    const workspaceConfig = vscode.workspace.getConfiguration('projectColors');
+    const workspaceConfig = vscode.workspace.getConfiguration('windowColor');
     const needsDefaults = !workspaceConfig.get('mainColor') || 
                          workspaceConfig.get('isStatusBarColored') === undefined ||
-                         workspaceConfig.get('isProjectNameColored') === undefined ||
+                         workspaceConfig.get('isWindowNameColored') === undefined ||
                          workspaceConfig.get('isActiveItemsColored') === undefined ||
                          workspaceConfig.get('setWindowTitle') === undefined;
     
@@ -84,8 +84,8 @@ export async function activate(context: vscode.ExtensionContext) {
         if (workspaceConfig.get('isStatusBarColored') === undefined) {
             savePromises.push(saveToWorkspaceConfig('isStatusBarColored', currentConfig.isStatusBarColored));
         }
-        if (workspaceConfig.get('isProjectNameColored') === undefined) {
-            savePromises.push(saveToWorkspaceConfig('isProjectNameColored', currentConfig.isProjectNameColored));
+        if (workspaceConfig.get('isWindowNameColored') === undefined) {
+            savePromises.push(saveToWorkspaceConfig('isWindowNameColored', currentConfig.isWindowNameColored));
         }
         if (workspaceConfig.get('isActiveItemsColored') === undefined) {
             savePromises.push(saveToWorkspaceConfig('isActiveItemsColored', currentConfig.isActiveItemsColored));
@@ -109,7 +109,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // );
 
     // updateListStatusbar(listStatusbar, currentConfig);
-    // listStatusbar.command = 'project-colors.openList';
+    // listStatusbar.command = 'set-window-color-name.openList';
     // listStatusbar.show();
 
     // context.subscriptions.push(listStatusbar);
@@ -121,7 +121,7 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 
     updateWorkspaceStatusbar(workspaceStatusbar, currentConfig);
-    workspaceStatusbar.command = 'project-colors.openSettings';
+    workspaceStatusbar.command = 'set-window-color-name.openSettings';
     workspaceStatusbar.show();
 
     // Ensure the status bar item is available immediately on launch
@@ -147,7 +147,7 @@ export async function activate(context: vscode.ExtensionContext) {
     // Listen for configuration changes
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(async (e) => {
-            if (e.affectsConfiguration('projectColors') && !isInitializing) {
+            if (e.affectsConfiguration('windowColor') && !isInitializing) {
                 // console.log('[DEBUG] Configuration change detected, isInitializing:', isInitializing);
                 const updatedConfig = await readConfig(currentWorkspace);
                 // console.log('[DEBUG] Updated config after change:', JSON.stringify(updatedConfig, null, 2));
@@ -158,7 +158,7 @@ export async function activate(context: vscode.ExtensionContext) {
                 updateWorkspaceStatusbar(workspaceStatusbar, updatedConfig);
                 updateWindowTitle(updatedConfig);
             } else {
-                // console.log('[DEBUG] Configuration change ignored - affectsProjectColors:', e.affectsConfiguration('projectColors'), 'isInitializing:', isInitializing);
+                // console.log('[DEBUG] Configuration change ignored - affectsWindowColor:', e.affectsConfiguration('windowColor'), 'isInitializing:', isInitializing);
             }
         })
     );
@@ -188,7 +188,7 @@ async function createWorkspaceSettingsWebview(context: vscode.ExtensionContext, 
         async (message) => {
             if (message.command === 'setProps') {
                 let editingIsCurrentWorkspace = directory === vscode.workspace.workspaceFolders?.[0].uri.fsPath;
-                let newProps: ProjectSettings = message.props;
+                let newProps: WindowSettings = message.props;
                 
                 // Apply colors immediately for instant feedback (don't await)
                 // console.log('[DEBUG] Applying colors from webview message with props:', JSON.stringify(newProps, null, 2));
@@ -204,21 +204,21 @@ async function createWorkspaceSettingsWebview(context: vscode.ExtensionContext, 
                 
                 // Save configurations in parallel
                 const savePromises = [
-                    saveToWorkspaceConfig('name', newProps.projectName),
+                    saveToWorkspaceConfig('name', newProps.windowName),
                     saveToWorkspaceConfig('mainColor', newProps.mainColor),
                     saveToWorkspaceConfig('isActivityBarColored', newProps.isActivityBarColored),
                     saveToWorkspaceConfig('isTitleBarColored', newProps.isTitleBarColored),
                     saveToWorkspaceConfig('isStatusBarColored', newProps.isStatusBarColored),
-                    saveToWorkspaceConfig('isProjectNameColored', newProps.isProjectNameColored),
+                    saveToWorkspaceConfig('isWindowNameColored', newProps.isWindowNameColored),
                     saveToWorkspaceConfig('isActiveItemsColored', newProps.isActiveItemsColored),
                     saveToWorkspaceConfig('setWindowTitle', newProps.setWindowTitle)
                 ];
 
                 // Save workspace reference with correct path
-                const reference: WorkspaceReference = {
+                const reference: WindowReference = {
                     directory: directory
                 };
-                savePromises.push(saveWorkspaceReference(reference));
+                savePromises.push(saveWindowReference(reference));
 
                 await Promise.all(savePromises);
             }
@@ -231,7 +231,7 @@ async function createWorkspaceSettingsWebview(context: vscode.ExtensionContext, 
 }
 
 function createWorkspaceSettingsCommand(context: vscode.ExtensionContext) {
-    const disposable = vscode.commands.registerCommand('project-colors.openSettings', async () => {
+    const disposable = vscode.commands.registerCommand('set-window-color-name.openSettings', async () => {
         // Check if we have a workspace file (.code-workspace)
         let currentWorkspace: string;
         if (vscode.workspace.workspaceFile) {
@@ -246,22 +246,22 @@ function createWorkspaceSettingsCommand(context: vscode.ExtensionContext) {
     context.subscriptions.push(disposable);
 }
 
-function updateWorkspaceStatusbar(item: vscode.StatusBarItem, args: ProjectSettings): void {
-    item.text = `${args.projectName}`;
-    if (args.isProjectNameColored || args.isStatusBarColored) {
+function updateWorkspaceStatusbar(item: vscode.StatusBarItem, args: WindowSettings): void {
+    item.text = `${args.windowName}`;
+    if (args.isWindowNameColored || args.isStatusBarColored) {
         item.backgroundColor = new vscode.ThemeColor('statusBarItem.warningBackground'); // Use warning color for contrast
         item.color = new vscode.ThemeColor('statusBarItem.warningForeground'); // Use warning foreground color for contrast
     } else {
         item.backgroundColor = undefined;
         item.color = undefined;
     }
-    item.tooltip = `Project: ${args.projectName}\nColor: ${args.mainColor}`;
+    item.tooltip = `Project: ${args.windowName}\nColor: ${args.mainColor}`;
 }
 
-function updateWindowTitle(args: ProjectSettings): void {
+function updateWindowTitle(args: WindowSettings): void {
     const config = vscode.workspace.getConfiguration('window');
     const defaultTitle = config.inspect('title')?.defaultValue || '';
-    const customTitle = args.setWindowTitle ? `${args.projectName}` : defaultTitle;
+    const customTitle = args.setWindowTitle ? `${args.windowName}` : defaultTitle;
 
     try {
         config.update('title', customTitle, vscode.ConfigurationTarget.Workspace);
@@ -270,7 +270,7 @@ function updateWindowTitle(args: ProjectSettings): void {
     }
 }
 
-function generateColorCustomizations(args: ProjectSettings): any {
+function generateColorCustomizations(args: WindowSettings): any {
     // console.log('[DEBUG] Generating color customizations for:', JSON.stringify(args, null, 2));
     const contrastColor = getContrastColor(args.mainColor);
     // console.log('[DEBUG] Contrast color calculated:', contrastColor);
@@ -301,7 +301,7 @@ function generateColorCustomizations(args: ProjectSettings): any {
         };
     }
 
-    if (args.isProjectNameColored) {
+    if (args.isWindowNameColored) {
         customizations["workbench.colorCustomizations"] = {
             ...customizations["workbench.colorCustomizations"],
             // "statusBar.background": args.mainColor,
@@ -365,7 +365,7 @@ function generateColorCustomizations(args: ProjectSettings): any {
             "statusBar.background": null,
             "statusBar.foreground": null,
             // Don't clear warning colors if project name is colored - they're needed for workspace name
-            ...(args.isProjectNameColored ? {} : {
+            ...(args.isWindowNameColored ? {} : {
                 "statusBarItem.warningBackground": null,
                 "statusBarItem.warningForeground": null,
                 "statusBarItem.warningHoverBackground": null,
@@ -383,7 +383,7 @@ function generateColorCustomizations(args: ProjectSettings): any {
             "statusBar.prominentHoverBackground": null,
             "statusBar.prominentHoverForeground": null,
             // Don't clear remote colors if project name is colored - they're needed for workspace name
-            ...(args.isProjectNameColored ? {} : {
+            ...(args.isWindowNameColored ? {} : {
                 "statusBarItem.remoteBackground": null,
                 "statusBarItem.remoteForeground": null,
                 "statusBarItem.remoteHoverBackground": null,
@@ -396,7 +396,7 @@ function generateColorCustomizations(args: ProjectSettings): any {
         customizations["workbench.colorCustomizations"] = {
             ...customizations["workbench.colorCustomizations"],
             // Only set status bar items if they're not already handled by project name or status bar coloring
-            ...(!args.isProjectNameColored && !args.isStatusBarColored ? {
+            ...(!args.isWindowNameColored && !args.isStatusBarColored ? {
                 "statusBarItem.warningBackground": args.mainColor,
                 "statusBarItem.warningForeground": contrastColor,
                 "statusBarItem.warningHoverBackground": args.mainColor,
@@ -405,22 +405,6 @@ function generateColorCustomizations(args: ProjectSettings): any {
                 "statusBarItem.remoteForeground": contrastColor,
                 "statusBarItem.remoteHoverBackground": args.mainColor,
                 "statusBarItem.remoteHoverForeground": semiTransparentContrast,
-            } : {}),
-            // Only set status bar background if status bar coloring is not enabled
-            ...(!args.isStatusBarColored ? {
-                "statusBar.background": args.mainColor,
-                "statusBar.foreground": contrastColor,
-                "statusBar.border": args.mainColor,
-                "statusBar.debuggingBackground": args.mainColor,
-                "statusBar.debuggingForeground": contrastColor,
-                "statusBar.debuggingBorder": args.mainColor,
-                "statusBar.noFolderBackground": args.mainColor,
-                "statusBar.noFolderForeground": contrastColor,
-                "statusBar.noFolderBorder": args.mainColor,
-                "statusBar.prominentBackground": args.mainColor,
-                "statusBar.prominentForeground": contrastColor,
-                "statusBar.prominentHoverBackground": args.mainColor,
-                "statusBar.prominentHoverForeground": semiTransparentContrast,
             } : {}),
             "focusBorder": transparency(args.mainColor, 0.6),
             "progressBar.background": args.mainColor,
@@ -441,7 +425,7 @@ function generateColorCustomizations(args: ProjectSettings): any {
         customizations["workbench.colorCustomizations"] = {
             ...customizations["workbench.colorCustomizations"],
             // Only clear status bar items if they're not handled by other sections
-            ...(!args.isProjectNameColored && !args.isStatusBarColored ? {
+            ...(!args.isWindowNameColored && !args.isStatusBarColored ? {
                 "statusBarItem.warningBackground": null,
                 "statusBarItem.warningForeground": null,
                 "statusBarItem.warningHoverBackground": null,
