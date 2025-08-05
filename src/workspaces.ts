@@ -27,7 +27,7 @@ export async function readConfig(directory: string): Promise<ProjectSettings> {
     }
 
     const fallbackProjectName = directory.split('/').pop() || 'Untitled Project';
-    const projectColors = directory.endsWith('.code-workspace') ? settings['settings'] : settings;
+    const projectColors = directory.endsWith('.code-workspace') ? (settings['settings'] || {}) : settings;
     // console.log('[DEBUG] Extracted projectColors:', JSON.stringify(projectColors, null, 2));
     
     // Only generate random color if no color exists
@@ -182,6 +182,13 @@ export async function applyColorCustomizations(customizations: any) {
             ...existingCustomizations,
             ...customizations["workbench.colorCustomizations"]
         };
+        
+        // Remove null values to clear disabled colors
+        Object.keys(mergedCustomizations).forEach(key => {
+            if (mergedCustomizations[key] === null) {
+                delete mergedCustomizations[key];
+            }
+        });
         // console.log('[DEBUG] Merged color customizations:', JSON.stringify(mergedCustomizations, null, 2));
         
         await config.update(

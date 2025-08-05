@@ -290,6 +290,14 @@ function generateColorCustomizations(args: ProjectSettings): any {
             "titleBar.inactiveBackground": args.mainColor,
             "titleBar.inactiveForeground": semiTransparentContrast,
         };
+    } else {
+        customizations["workbench.colorCustomizations"] = {
+            ...customizations["workbench.colorCustomizations"],
+            "titleBar.activeBackground": null,
+            "titleBar.activeForeground": null,
+            "titleBar.inactiveBackground": null,
+            "titleBar.inactiveForeground": null,
+        };
     }
 
     if (args.isProjectNameColored) {
@@ -309,6 +317,18 @@ function generateColorCustomizations(args: ProjectSettings): any {
             "statusBarItem.remoteForeground": contrastColor,
             "statusBarItem.remoteHoverBackground": args.mainColor,
             "statusBarItem.remoteHoverForeground": semiTransparentContrast,
+        };
+    } else {
+        customizations["workbench.colorCustomizations"] = {
+            ...customizations["workbench.colorCustomizations"],
+            "statusBarItem.warningBackground": null,
+            "statusBarItem.warningForeground": null,
+            "statusBarItem.warningHoverBackground": null,
+            "statusBarItem.warningHoverForeground": null,
+            "statusBarItem.remoteBackground": null,
+            "statusBarItem.remoteForeground": null,
+            "statusBarItem.remoteHoverBackground": null,
+            "statusBarItem.remoteHoverForeground": null,
         };
     }
 
@@ -338,6 +358,37 @@ function generateColorCustomizations(args: ProjectSettings): any {
             "statusBarItem.remoteHoverBackground": lightenOrDarkenColor(args.mainColor, 10),
             "statusBarItem.remoteHoverForeground": semiTransparentContrast,
         };
+    } else {
+        customizations["workbench.colorCustomizations"] = {
+            ...customizations["workbench.colorCustomizations"],
+            "statusBar.background": null,
+            "statusBar.foreground": null,
+            // Don't clear warning colors if project name is colored - they're needed for workspace name
+            ...(args.isProjectNameColored ? {} : {
+                "statusBarItem.warningBackground": null,
+                "statusBarItem.warningForeground": null,
+                "statusBarItem.warningHoverBackground": null,
+                "statusBarItem.warningHoverForeground": null,
+            }),
+            "statusBar.border": null,
+            "statusBar.debuggingBackground": null,
+            "statusBar.debuggingForeground": null,
+            "statusBar.debuggingBorder": null,
+            "statusBar.noFolderBackground": null,
+            "statusBar.noFolderForeground": null,
+            "statusBar.noFolderBorder": null,
+            "statusBar.prominentBackground": null,
+            "statusBar.prominentForeground": null,
+            "statusBar.prominentHoverBackground": null,
+            "statusBar.prominentHoverForeground": null,
+            // Don't clear remote colors if project name is colored - they're needed for workspace name
+            ...(args.isProjectNameColored ? {} : {
+                "statusBarItem.remoteBackground": null,
+                "statusBarItem.remoteForeground": null,
+                "statusBarItem.remoteHoverBackground": null,
+                "statusBarItem.remoteHoverForeground": null,
+            }),
+        };
     }
 
     if (args.isActiveItemsColored) {
@@ -365,6 +416,31 @@ function generateColorCustomizations(args: ProjectSettings): any {
             "list.activeSelectionBackground": transparency(args.mainColor, 0.3),
             "panelTitle.activeBorder": lightenOrDarkenColor(args.mainColor, 5),
         };
+    } else {
+        customizations["workbench.colorCustomizations"] = {
+            ...customizations["workbench.colorCustomizations"],
+            "focusBorder": null,
+            "progressBar.background": null,
+            "textLink.foreground": null,
+            "textLink.activeForeground": null,
+            "selection.background": null,
+            "activityBarBadge.background": null,
+            "activityBarBadge.foreground": null,
+            "activityBar.activeBorder": null,
+            "statusBarItem.remoteBackground": null,
+            "statusBarItem.remoteForeground": null,
+            "statusBarItem.remoteHoverBackground": null,
+            "statusBarItem.remoteHoverForeground": null,
+            "list.highlightForeground": null,
+            "list.focusAndSelectionOutline": null,
+            "button.background": null,
+            "button.foreground": null,
+            "button.hoverBackground": null,
+            "tab.activeBorderTop": null,
+            "pickerGroup.foreground": null,
+            "list.activeSelectionBackground": null,
+            "panelTitle.activeBorder": null,
+        };
     }
 
     if (args.isActivityBarColored) {
@@ -376,6 +452,16 @@ function generateColorCustomizations(args: ProjectSettings): any {
             "activityBar.inactiveForeground": semiTransparentContrast,
             "activityBarBadge.foreground": contrastColor === "#ffffff" ? "#000000" : "#ffffff",
             "activityBarBadge.background": contrastColor === "#ffffff" ? lightenOrDarkenColor(args.mainColor, 75) : lightenOrDarkenColor(args.mainColor, -75),
+        };
+    } else {
+        customizations["workbench.colorCustomizations"] = {
+            ...customizations["workbench.colorCustomizations"],
+            "activityBar.background": null,
+            "activityBar.foreground": null,
+            "activityBar.activeBorder": null,
+            "activityBar.inactiveForeground": null,
+            "activityBarBadge.foreground": null,
+            "activityBarBadge.background": null,
         };
     }
 

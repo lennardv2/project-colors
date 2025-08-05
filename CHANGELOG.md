@@ -4,6 +4,13 @@ All notable changes to the "project-colors" extension will be documented in this
 
 Check [Keep a Changelog](http://keepachangelog.com/) for recommendations on how to structure this file.
 
+## [1.1.2] - 2025-08-05
+
+### Fixed
+- Fixed extension activation error on remote SSH environments where workspace files don't have settings property
+- Fixed colorization toggles not immediately removing colors when unchecked (title bar, activity bar, status bar, etc.)
+- Fixed workspace name color staying brown instead of using selected project color when "colorize workspace name" is enabled
+
 ## [1.1.1] - 2025-08-05
 
 ### Fixed
