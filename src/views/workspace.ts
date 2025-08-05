@@ -215,13 +215,13 @@ export function getWorkspaceWebview(args: ProjectSettings): string {
 
         projectNameInput.addEventListener('input', () => {
           props.projectName = projectNameInput.value;
-          postMessageDebounced({ command: 'setProps', props });
+          postMessageDebouncedLong({ command: 'setProps', props });
         });
 
         colorPicker.addEventListener('input', () => {
           const color = colorPicker.value;
           props.mainColor = color;
-          postMessageDebounced({ command: 'setProps', props });
+          postMessageDebouncedLong({ command: 'setProps', props });
         });
 
         isActivityBarColored.addEventListener('change', () => {
@@ -265,6 +265,10 @@ export function getWorkspaceWebview(args: ProjectSettings): string {
         const postMessageDebounced = debounce((args) => {
             vscode.postMessage(args);
         }, 150);
+        
+        const postMessageDebouncedLong = debounce((args) => {
+            vscode.postMessage(args);
+        }, 500);
 
       </script>
     </body>

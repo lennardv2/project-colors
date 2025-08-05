@@ -11,13 +11,17 @@ export async function readConfig(directory: string): Promise<ProjectSettings> {
     const fallbackProjectName = directory.split('/').pop() || 'Untitled Project';
 
     const projectColors = directory.endsWith('.code-workspace') ? settings['settings'] : settings;
+    
+    // Only generate random color if no color exists
+    const existingColor = projectColors['projectColors.mainColor'];
+    const mainColor = existingColor || generateRandomColor();
 
     return {
         projectName: projectColors['projectColors.name'] || fallbackProjectName,
-        mainColor: projectColors['projectColors.mainColor'] || '#681DD7',
+        mainColor: mainColor,
         isActivityBarColored: projectColors['projectColors.isActivityBarColored'] ?? false,
         isTitleBarColored: projectColors['projectColors.isTitleBarColored'] ?? false,
-        isStatusBarColored: projectColors['projectColors.isStatusBarColored'] ?? false,
+        isStatusBarColored: projectColors['projectColors.isStatusBarColored'] ?? true,
         isProjectNameColored: projectColors['projectColors.isProjectNameColored'] ?? true,
         isActiveItemsColored: projectColors['projectColors.isActiveItemsColored'] ?? true,
         setWindowTitle: projectColors['projectColors.setWindowTitle'] ?? true
@@ -63,4 +67,37 @@ export function hexToRgb(hex: string): { r: number; g: number; b: number } {
         g: (bigint >> 8) & 255,
         b: bigint & 255,
     };
+}
+
+export function generateRandomColor(): string {
+    const hue = Math.floor(Math.random() * 360);
+    const saturation = 70 + Math.floor(Math.random() * 30); // 70-100% saturation
+    const lightness = 40 + Math.floor(Math.random() * 20); // 40-60% lightness
+    
+    // Convert HSL to RGB
+    const c = (1 - Math.abs(2 * lightness / 100 - 1)) * saturation / 100;
+    const x = c * (1 - Math.abs((hue / 60) % 2 - 1));
+    const m = lightness / 100 - c / 2;
+    
+    let r = 0, g = 0, b = 0;
+    
+    if (hue >= 0 && hue < 60) {
+        r = c; g = x; b = 0;
+    } else if (hue >= 60 && hue < 120) {
+        r = x; g = c; b = 0;
+    } else if (hue >= 120 && hue < 180) {
+        r = 0; g = c; b = x;
+    } else if (hue >= 180 && hue < 240) {
+        r = 0; g = x; b = c;
+    } else if (hue >= 240 && hue < 300) {
+        r = x; g = 0; b = c;
+    } else if (hue >= 300 && hue < 360) {
+        r = c; g = 0; b = x;
+    }
+    
+    r = Math.round((r + m) * 255);
+    g = Math.round((g + m) * 255);
+    b = Math.round((b + m) * 255);
+    
+    return `#${((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1)}`;
 }

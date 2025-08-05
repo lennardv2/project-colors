@@ -46,13 +46,62 @@ export type WorkspaceGroup = {
 }
 
 let workspaceStatusbar : vscode.StatusBarItem;
+let isInitializing = true;
 
 export async function activate(context: vscode.ExtensionContext) {
-    let currentWorkspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath || '';
+    // Check if we have a workspace file (.code-workspace)
+    let currentWorkspace: string;
+    if (vscode.workspace.workspaceFile) {
+        // Use the workspace file path if it exists
+        currentWorkspace = vscode.workspace.workspaceFile.fsPath;
+    } else {
+        // Otherwise use the first workspace folder
+        currentWorkspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath || '';
+    }
+    
     if (!currentWorkspace) {
         return
     }
+    // console.log('[DEBUG] Reading initial config for workspace:', currentWorkspace);
     let currentConfig = await readConfig(currentWorkspace);
+    // console.log('[DEBUG] Initial config read:', JSON.stringify(currentConfig, null, 2));
+    
+    // Check if we need to save default values
+    const workspaceConfig = vscode.workspace.getConfiguration('projectColors');
+    const needsDefaults = !workspaceConfig.get('mainColor') || 
+                         workspaceConfig.get('isStatusBarColored') === undefined ||
+                         workspaceConfig.get('isProjectNameColored') === undefined ||
+                         workspaceConfig.get('isActiveItemsColored') === undefined ||
+                         workspaceConfig.get('setWindowTitle') === undefined;
+    
+    if (needsDefaults) {
+        // Save all default values at once to avoid multiple config change events
+        const savePromises = [];
+        
+        if (!workspaceConfig.get('mainColor') && currentConfig.mainColor) {
+            savePromises.push(saveToWorkspaceConfig('mainColor', currentConfig.mainColor));
+        }
+        if (workspaceConfig.get('isStatusBarColored') === undefined) {
+            savePromises.push(saveToWorkspaceConfig('isStatusBarColored', currentConfig.isStatusBarColored));
+        }
+        if (workspaceConfig.get('isProjectNameColored') === undefined) {
+            savePromises.push(saveToWorkspaceConfig('isProjectNameColored', currentConfig.isProjectNameColored));
+        }
+        if (workspaceConfig.get('isActiveItemsColored') === undefined) {
+            savePromises.push(saveToWorkspaceConfig('isActiveItemsColored', currentConfig.isActiveItemsColored));
+        }
+        if (workspaceConfig.get('setWindowTitle') === undefined) {
+            savePromises.push(saveToWorkspaceConfig('setWindowTitle', currentConfig.setWindowTitle));
+        }
+        
+        // Wait for all saves to complete
+        await Promise.all(savePromises);
+        
+        // Re-read config after saving defaults to ensure consistency
+        // console.log('[DEBUG] Re-reading config after saving defaults');
+        currentConfig = await readConfig(currentWorkspace);
+        // console.log('[DEBUG] Config after saving defaults:', JSON.stringify(currentConfig, null, 2));
+    }
 
     // listStatusbar = vscode.window.createStatusBarItem(
     //     vscode.StatusBarAlignment.Left,
@@ -82,17 +131,34 @@ export async function activate(context: vscode.ExtensionContext) {
     createWorkspaceSettingsCommand(context);
 
     // Initialize window title on activation
-    applyColorCustomizations(generateColorCustomizations(currentConfig));
     updateWindowTitle(currentConfig);
+
+    // Apply color customizations AFTER all configurations are saved
+    // This ensures the settings.json exists with all values before applying colors
+    // console.log('[DEBUG] Applying initial color customizations');
+    const initialCustomizations = generateColorCustomizations(currentConfig);
+    // console.log('[DEBUG] Initial color customizations generated:', JSON.stringify(initialCustomizations, null, 2));
+    await applyColorCustomizations(initialCustomizations);
+    // console.log('[DEBUG] Initial color customizations applied');
+
+    // Mark initialization as complete
+    isInitializing = false;
 
     // Listen for configuration changes
     context.subscriptions.push(
         vscode.workspace.onDidChangeConfiguration(async (e) => {
-            if (e.affectsConfiguration('projectColors')) {
+            if (e.affectsConfiguration('projectColors') && !isInitializing) {
+                // console.log('[DEBUG] Configuration change detected, isInitializing:', isInitializing);
                 const updatedConfig = await readConfig(currentWorkspace);
-                applyColorCustomizations(generateColorCustomizations(updatedConfig));
+                // console.log('[DEBUG] Updated config after change:', JSON.stringify(updatedConfig, null, 2));
+                const updatedCustomizations = generateColorCustomizations(updatedConfig);
+                // console.log('[DEBUG] Updated color customizations generated:', JSON.stringify(updatedCustomizations, null, 2));
+                await applyColorCustomizations(updatedCustomizations);
+                // console.log('[DEBUG] Updated color customizations applied');
                 updateWorkspaceStatusbar(workspaceStatusbar, updatedConfig);
                 updateWindowTitle(updatedConfig);
+            } else {
+                // console.log('[DEBUG] Configuration change ignored - affectsProjectColors:', e.affectsConfiguration('projectColors'), 'isInitializing:', isInitializing);
             }
         })
     );
@@ -124,7 +190,11 @@ async function createWorkspaceSettingsWebview(context: vscode.ExtensionContext, 
                 let newProps: ProjectSettings = message.props;
                 
                 // Apply colors immediately for instant feedback (don't await)
-                applyColorCustomizations(generateColorCustomizations(newProps));
+                // console.log('[DEBUG] Applying colors from webview message with props:', JSON.stringify(newProps, null, 2));
+                const webviewCustomizations = generateColorCustomizations(newProps);
+                // console.log('[DEBUG] Webview color customizations generated:', JSON.stringify(webviewCustomizations, null, 2));
+                applyColorCustomizations(webviewCustomizations);
+                // console.log('[DEBUG] Webview color customizations applied');
                 
                 if (editingIsCurrentWorkspace) {
                     updateWorkspaceStatusbar(workspaceStatusbar, newProps);
@@ -143,13 +213,11 @@ async function createWorkspaceSettingsWebview(context: vscode.ExtensionContext, 
                     saveToWorkspaceConfig('setWindowTitle', newProps.setWindowTitle)
                 ];
 
-                const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-                if (workspaceFolder) {
-                    const reference: WorkspaceReference = {
-                        directory: workspaceFolder.uri.fsPath
-                    };
-                    savePromises.push(saveWorkspaceReference(reference));
-                }
+                // Save workspace reference with correct path
+                const reference: WorkspaceReference = {
+                    directory: directory
+                };
+                savePromises.push(saveWorkspaceReference(reference));
 
                 await Promise.all(savePromises);
             }
@@ -163,7 +231,16 @@ async function createWorkspaceSettingsWebview(context: vscode.ExtensionContext, 
 
 function createWorkspaceSettingsCommand(context: vscode.ExtensionContext) {
     const disposable = vscode.commands.registerCommand('project-colors.openSettings', async () => {
-        await createWorkspaceSettingsWebview(context, vscode.workspace.workspaceFolders?.[0].uri.fsPath || '');
+        // Check if we have a workspace file (.code-workspace)
+        let currentWorkspace: string;
+        if (vscode.workspace.workspaceFile) {
+            // Use the workspace file path if it exists
+            currentWorkspace = vscode.workspace.workspaceFile.fsPath;
+        } else {
+            // Otherwise use the first workspace folder
+            currentWorkspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath || '';
+        }
+        await createWorkspaceSettingsWebview(context, currentWorkspace);
     });
     context.subscriptions.push(disposable);
 }
@@ -193,7 +270,9 @@ function updateWindowTitle(args: ProjectSettings): void {
 }
 
 function generateColorCustomizations(args: ProjectSettings): any {
+    // console.log('[DEBUG] Generating color customizations for:', JSON.stringify(args, null, 2));
     const contrastColor = getContrastColor(args.mainColor);
+    // console.log('[DEBUG] Contrast color calculated:', contrastColor);
 
     const semiTransparentContrast = `${contrastColor}90`;
 
@@ -300,6 +379,7 @@ function generateColorCustomizations(args: ProjectSettings): any {
         };
     }
 
+    // console.log('[DEBUG] Final customizations generated:', JSON.stringify(customizations, null, 2));
     return customizations;
 }
 

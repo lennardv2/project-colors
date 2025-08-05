@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { ProjectSettings, WorkspaceReference, WorkspaceGroup } from './extension';
-import { getContrastColor } from './helpers';
+import { getContrastColor, generateRandomColor } from './helpers';
 
 export async function loadWorkspaces(): Promise<(WorkspaceReference & { settings: ProjectSettings })[]> {
     const references = loadWorkspaceReferences();
@@ -11,13 +11,16 @@ export async function loadWorkspaces(): Promise<(WorkspaceReference & { settings
 }
 
 export async function readConfig(directory: string): Promise<ProjectSettings> {
+    // console.log('[DEBUG] readConfig called for directory:', directory);
     const uri = vscode.Uri.file(directory);
     const configPath = directory.endsWith('.code-workspace') ? uri : uri.with({ path: `${uri.path}/.vscode/settings.json` });
+    // console.log('[DEBUG] Reading config from path:', configPath.fsPath);
 
     let settings: any;
     try {
         const config = await vscode.workspace.fs.readFile(configPath);
         settings = JSON.parse(config.toString());
+        // console.log('[DEBUG] Config file contents:', JSON.stringify(settings, null, 2));
     } catch (error: any) {
         console.error(`Failed to read config file at ${configPath.fsPath}: ${error.message}`);
         settings = {};
@@ -25,18 +28,26 @@ export async function readConfig(directory: string): Promise<ProjectSettings> {
 
     const fallbackProjectName = directory.split('/').pop() || 'Untitled Project';
     const projectColors = directory.endsWith('.code-workspace') ? settings['settings'] : settings;
+    // console.log('[DEBUG] Extracted projectColors:', JSON.stringify(projectColors, null, 2));
+    
+    // Only generate random color if no color exists
+    const existingColor = projectColors['projectColors.mainColor'];
+    const mainColor = existingColor || generateRandomColor();
+    // console.log('[DEBUG] Using main color:', mainColor, '(existing:', existingColor, ')');
 
-    return {
+    const result = {
         projectName: projectColors['projectColors.name'] || fallbackProjectName,
-        mainColor: projectColors['projectColors.mainColor'] || '#681DD7',
-        mainColorContrast: getContrastColor(projectColors['projectColors.mainColor'] || '#681DD7'),
+        mainColor: mainColor,
+        mainColorContrast: getContrastColor(mainColor),
         isActivityBarColored: projectColors['projectColors.isActivityBarColored'] ?? false,
         isTitleBarColored: projectColors['projectColors.isTitleBarColored'] ?? false,
-        isStatusBarColored: projectColors['projectColors.isStatusBarColored'] ?? false,
+        isStatusBarColored: projectColors['projectColors.isStatusBarColored'] ?? true,
         isProjectNameColored: projectColors['projectColors.isProjectNameColored'] ?? true,
         isActiveItemsColored: projectColors['projectColors.isActiveItemsColored'] ?? true,
         setWindowTitle: projectColors['projectColors.setWindowTitle'] ?? true
     };
+    // console.log('[DEBUG] readConfig returning:', JSON.stringify(result, null, 2));
+    return result;
 }
 
 export async function saveWorkspaceReference(reference: WorkspaceReference): Promise<void> {
@@ -133,8 +144,10 @@ export async function loadWorkspaceConfig(directory: string): Promise<ProjectSet
 }
 
 export async function saveToWorkspaceConfig(key: string, value: string | boolean): Promise<void> {
+    // console.log('[DEBUG] saveToWorkspaceConfig called with key:', key, 'value:', value);
     const config = vscode.workspace.getConfiguration('projectColors');
     await config.update(key, value, vscode.ConfigurationTarget.Workspace);
+    // console.log('[DEBUG] saveToWorkspaceConfig completed for key:', key);
 }
 
 export async function saveWorkspaceToGroup(groupName: string, workspace: WorkspaceReference): Promise<void> {
@@ -157,14 +170,28 @@ export async function renameWorkspaceGroup(oldName: string, newName: string): Pr
 }
 
 export async function applyColorCustomizations(customizations: any) {
+    // console.log('[DEBUG] applyColorCustomizations called with:', JSON.stringify(customizations, null, 2));
     const config = vscode.workspace.getConfiguration();
     try {
+        // Get existing color customizations to preserve any user-defined colors
+        const existingCustomizations = config.get<any>("workbench.colorCustomizations") || {};
+        // console.log('[DEBUG] Existing color customizations:', JSON.stringify(existingCustomizations, null, 2));
+        
+        // Merge with new customizations (new ones override existing)
+        const mergedCustomizations = {
+            ...existingCustomizations,
+            ...customizations["workbench.colorCustomizations"]
+        };
+        // console.log('[DEBUG] Merged color customizations:', JSON.stringify(mergedCustomizations, null, 2));
+        
         await config.update(
             "workbench.colorCustomizations",
-            customizations["workbench.colorCustomizations"],
+            mergedCustomizations,
             vscode.ConfigurationTarget.Workspace
         );
+        // console.log('[DEBUG] Color customizations successfully applied to workspace');
     } catch (error: any) {
+        console.error('[DEBUG] Failed to apply color customizations:', error.message);
         vscode.window.showErrorMessage(`Failed to apply color customizations: ${error.message}`);
     }
 }

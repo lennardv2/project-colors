@@ -2,7 +2,7 @@
     "name": "project-colors",
     "displayName": "Workspace Name & Colors",
     "description": "Customize workspace colors and specify a name to distinguish multiple windows. Keywords: project workspace colors peacock colorize",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "engines": {
         "vscode": "^1.60.0"
     },
@@ -57,6 +57,47 @@
                 "projectColors.setWindowTitle": {
                     "type": "boolean",
                     "description": "Whether to set the window title"
+                },
+                "projectColors.workspaces": {
+                    "type": "array",
+                    "description": "List of workspace references",
+                    "default": [],
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "directory": {
+                                "type": "string",
+                                "description": "Path to the workspace directory"
+                            }
+                        }
+                    }
+                },
+                "projectColors.groups": {
+                    "type": "array",
+                    "description": "List of workspace groups",
+                    "default": [],
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "name": {
+                                "type": "string",
+                                "description": "Name of the group"
+                            },
+                            "workspaces": {
+                                "type": "array",
+                                "description": "Workspaces in this group",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "directory": {
+                                            "type": "string",
+                                            "description": "Path to the workspace directory"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         },
