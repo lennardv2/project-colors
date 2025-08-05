@@ -128,7 +128,7 @@ export async function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(workspaceStatusbar);
 
     // createListCommand(context);
-    createWorkspaceSettingsCommand(context);
+    createWindowSettingsCommand(context);
 
     // Initialize window title on activation
     updateWindowTitle(currentConfig);
@@ -164,10 +164,10 @@ export async function activate(context: vscode.ExtensionContext) {
     );
 }
 
-async function createWorkspaceSettingsWebview(context: vscode.ExtensionContext, directory: string) {
+async function createWindowSettingsWebview(context: vscode.ExtensionContext, directory: string) {
     const panel = vscode.window.createWebviewPanel(
-        'projectSettings',
-        'Project Settings',
+        'windowSettings',
+        'Window Settings',
         vscode.ViewColumn.One,
         { enableScripts: true }
     );
@@ -230,7 +230,7 @@ async function createWorkspaceSettingsWebview(context: vscode.ExtensionContext, 
     await updateWebview();
 }
 
-function createWorkspaceSettingsCommand(context: vscode.ExtensionContext) {
+function createWindowSettingsCommand(context: vscode.ExtensionContext) {
     const disposable = vscode.commands.registerCommand('set-window-color-name.openSettings', async () => {
         // Check if we have a workspace file (.code-workspace)
         let currentWorkspace: string;
@@ -241,7 +241,7 @@ function createWorkspaceSettingsCommand(context: vscode.ExtensionContext) {
             // Otherwise use the first workspace folder
             currentWorkspace = vscode.workspace.workspaceFolders?.[0].uri.fsPath || '';
         }
-        await createWorkspaceSettingsWebview(context, currentWorkspace);
+        await createWindowSettingsWebview(context, currentWorkspace);
     });
     context.subscriptions.push(disposable);
 }
@@ -364,7 +364,7 @@ function generateColorCustomizations(args: WindowSettings): any {
             ...customizations["workbench.colorCustomizations"],
             "statusBar.background": null,
             "statusBar.foreground": null,
-            // Don't clear warning colors if project name is colored - they're needed for workspace name
+            // Don't clear warning colors if window name is colored - they're needed for workspace name
             ...(args.isWindowNameColored ? {} : {
                 "statusBarItem.warningBackground": null,
                 "statusBarItem.warningForeground": null,
@@ -382,7 +382,7 @@ function generateColorCustomizations(args: WindowSettings): any {
             "statusBar.prominentForeground": null,
             "statusBar.prominentHoverBackground": null,
             "statusBar.prominentHoverForeground": null,
-            // Don't clear remote colors if project name is colored - they're needed for workspace name
+            // Don't clear remote colors if window name is colored - they're needed for workspace name
             ...(args.isWindowNameColored ? {} : {
                 "statusBarItem.remoteBackground": null,
                 "statusBarItem.remoteForeground": null,
@@ -395,7 +395,7 @@ function generateColorCustomizations(args: WindowSettings): any {
     if (args.isActiveItemsColored) {
         customizations["workbench.colorCustomizations"] = {
             ...customizations["workbench.colorCustomizations"],
-            // Only set status bar items if they're not already handled by project name or status bar coloring
+            // Only set status bar items if they're not already handled by window name or status bar coloring
             ...(!args.isWindowNameColored && !args.isStatusBarColored ? {
                 "statusBarItem.warningBackground": args.mainColor,
                 "statusBarItem.warningForeground": contrastColor,

@@ -28,11 +28,11 @@
             "properties": {
                 "windowColor.name": {
                     "type": "string",
-                    "description": "Name of the project"
+                    "description": "Name of the window"
                 },
                 "windowColor.mainColor": {
                     "type": "string",
-                    "description": "Main color of the project"
+                    "description": "Main color of the window"
                 },
                 "windowColor.isActivityBarColored": {
                     "type": "boolean",

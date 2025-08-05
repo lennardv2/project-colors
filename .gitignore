@@ -8,3 +8,5 @@ node_modules
 # Publishing tokens - NEVER commit these
 /.vsce
 /.ovsx
+
+CLAUDE.md

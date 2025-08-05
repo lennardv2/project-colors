@@ -134,8 +134,8 @@ export function getWorkspaceWebview(args: WindowSettings, version?: string): str
         <h1>Set Window Color & Name</h1>
     
         <div class="group">
-            <label for="projectName">Window Name:</label>
-            <input type="text" id="projectName" value="${args.windowName}" placeholder="Enter window name">
+            <label for="windowName">Window Name:</label>
+            <input type="text" id="windowName" value="${args.windowName}" placeholder="Enter window name">
 
             <div class="group-compact">
                 <div class="toggle-container">
@@ -198,7 +198,7 @@ export function getWorkspaceWebview(args: WindowSettings, version?: string): str
       </div>
       <script>
         const vscode = acquireVsCodeApi();
-        const projectNameInput = document.getElementById('projectName');
+        const windowNameInput = document.getElementById('windowName');
         const colorPicker = document.getElementById('colorPicker');
         const colorValue = document.getElementById('colorValue');
         const isActivityBarColored = document.getElementById('isActivityBarColored');
@@ -209,7 +209,7 @@ export function getWorkspaceWebview(args: WindowSettings, version?: string): str
         const setWindowTitle = document.getElementById('setWindowTitle');
 
         let props = {
-            windowName: projectNameInput.value,
+            windowName: windowNameInput.value,
             mainColor: colorPicker.value,
             isActivityBarColored: isActivityBarColored.checked,
             isTitleBarColored: isTitleBarColored.checked,
@@ -219,8 +219,8 @@ export function getWorkspaceWebview(args: WindowSettings, version?: string): str
             setWindowTitle: setWindowTitle.checked
         };
 
-        projectNameInput.addEventListener('input', () => {
-          props.windowName = projectNameInput.value;
+        windowNameInput.addEventListener('input', () => {
+          props.windowName = windowNameInput.value;
           postMessageDebouncedLong({ command: 'setProps', props });
         });
 
