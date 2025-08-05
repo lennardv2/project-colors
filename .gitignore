@@ -4,3 +4,7 @@ node_modules
 .vscode-test/
 *.vsix
 .vscode
+
+# Publishing tokens - NEVER commit these
+/.vsce
+/.ovsx
