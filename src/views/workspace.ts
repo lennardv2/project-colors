@@ -1,6 +1,6 @@
 import { ProjectSettings } from "../extension";
 
-export function getWorkspaceWebview(args: ProjectSettings): string {
+export function getWorkspaceWebview(args: ProjectSettings, version?: string): string {
     return `
     <!DOCTYPE html>
     <html lang="en">
@@ -187,6 +187,12 @@ export function getWorkspaceWebview(args: ProjectSettings): string {
                     <label for="isActiveItemsColored">Colorize Active Items</label>
                 </div>
             </div>
+        </div>
+
+        <div style="margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--vscode-input-border); text-align: center;">
+            <p style="font-size: 0.8rem; color: var(--vscode-descriptionForeground); margin: 0;">
+                Project Colors v${version || '1.1.3'}
+            </p>
         </div>
 
       </div>

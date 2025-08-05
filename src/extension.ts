@@ -174,7 +174,8 @@ async function createWorkspaceSettingsWebview(context: vscode.ExtensionContext, 
 
     async function updateWebview() {
         const args = await readConfig(directory);
-        panel.webview.html = getWorkspaceWebview(args);
+        const packageJson = require('../package.json');
+        panel.webview.html = getWorkspaceWebview(args, packageJson.version);
     }
 
     panel.onDidChangeViewState(async () => {
