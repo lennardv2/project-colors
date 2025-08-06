@@ -1,4 +1,4 @@
-# VSCode Window Color & Name
+# VSCode Window Color
 ![demo](https://github.com/user-attachments/assets/b751b5ec-cb4d-4791-af76-ee2292d41eda)
 
 **Set Window Color & Name** is a VS Code extension designed to make your Visual Studio Code window more personal and visually distinct. Easily set window-specific colors and display a window name in the status bar to improve organization and recognition across multiple windows.
